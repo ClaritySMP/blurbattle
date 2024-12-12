@@ -1,8 +1,8 @@
-name: blurbattle
-version: '1.0.0'
+name: Blurbattle
+version: 1.0.0
 main: org.neo.blurbattle.Blurbattle
-api-version: '1.21'
+api-version: 1.21
 commands:
   blurbattle:
     description: Challenge another player to a PvP battle.
-    usage: /blurbattle [player] or /blurbattle confirm
+    usage: /blurbattle <player> or /blurbattle confirm

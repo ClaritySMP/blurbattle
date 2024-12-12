@@ -14,6 +14,10 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.World;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
 
 import java.util.HashMap;
 import java.util.UUID;
@@ -31,77 +35,80 @@ public final class Blurbattle extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
         getServer().getPluginManager().registerEvents(this, this);
-        getCommand("blurbattle").setExecutor((sender, command, label, args) -> {
-            if (!(sender instanceof Player)) {
-                sender.sendMessage(ChatColor.RED + "Only players can use this command.");
-                return true;
-            }
-
-            Player player = (Player) sender;
-
-            if (args.length == 1) {
-                Player target = Bukkit.getPlayer(args[0]);
-                if (target == null || !target.isOnline()) {
-                    player.sendMessage(ChatColor.RED + "Player not found or not online.");
-                    return true;
-                }
-
-                if (battleRequests.containsKey(player.getUniqueId())) {
-                    player.sendMessage(ChatColor.RED + "You already have a pending battle request.");
-                    return true;
-                }
-
-                battleRequests.put(player.getUniqueId(), target.getUniqueId());
-                target.sendMessage(ChatColor.YELLOW + player.getName() + " has challenged you to a battle! Type /blurbattle confirm to accept.");
-                player.sendMessage(ChatColor.GREEN + "Battle request sent to " + target.getName() + ".");
-
-                // Timeout for the request
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        if (battleRequests.containsKey(player.getUniqueId())) {
-                            battleRequests.remove(player.getUniqueId());
-                            player.sendMessage(ChatColor.RED + "Your battle request to " + target.getName() + " has expired.");
-                        }
-                    }
-                }.runTaskLater(this, 20 * 60); // 60 seconds
-                return true;
-            }
-
-            if (args.length == 1 && args[0].equalsIgnoreCase("confirm")) {
-                UUID challengerId = null;
-                for (UUID uuid : battleRequests.keySet()) {
-                    if (battleRequests.get(uuid).equals(player.getUniqueId())) {
-                        challengerId = uuid;
-                        break;
-                    }
-                }
-
-                if (challengerId == null) {
-                    player.sendMessage(ChatColor.RED + "No pending battle request found.");
-                    return true;
-                }
-
-                Player challenger = Bukkit.getPlayer(challengerId);
-                if (challenger == null || !challenger.isOnline()) {
-                    player.sendMessage(ChatColor.RED + "The challenger is no longer online.");
-                    battleRequests.remove(challengerId);
-                    return true;
-                }
-
-                openBettingMenu(challenger, player);
-                battleRequests.remove(challengerId);
-                return true;
-            }
-
-            player.sendMessage(ChatColor.RED + "Usage: /blurbattle [player] or /blurbattle confirm");
-            return true;
-        });
+        getCommand("blurbattle").setExecutor(this);
     }
 
     @Override
     public void onDisable() {
         // Plugin shutdown logic
+    }
+
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(ChatColor.RED + "Only players can use this command.");
+            return true;
+        }
+
+        Player player = (Player) sender;
+
+        if (args.length == 1) {
+            Player target = Bukkit.getPlayer(args[0]);
+            if (target == null || !target.isOnline()) {
+                player.sendMessage(ChatColor.RED + "Player not found or not online.");
+                return true;
+            }
+
+            if (battleRequests.containsKey(player.getUniqueId())) {
+                player.sendMessage(ChatColor.RED + "You already have a pending battle request.");
+                return true;
+            }
+
+            battleRequests.put(player.getUniqueId(), target.getUniqueId());
+            target.sendMessage(ChatColor.YELLOW + player.getName() + " has challenged you to a battle! Type /blurbattle confirm to accept.");
+            player.sendMessage(ChatColor.GREEN + "Battle request sent to " + target.getName() + ".");
+
+            // Timeout for the request
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    if (battleRequests.containsKey(player.getUniqueId())) {
+                        battleRequests.remove(player.getUniqueId());
+                        player.sendMessage(ChatColor.RED + "Your battle request to " + target.getName() + " has expired.");
+                    }
+                }
+            }.runTaskLater(this, 20 * 60); // 60 seconds
+            return true;
+        }
+
+        if (args.length == 1 && args[0].equalsIgnoreCase("confirm")) {
+            UUID challengerId = null;
+            for (UUID uuid : battleRequests.keySet()) {
+                if (battleRequests.get(uuid).equals(player.getUniqueId())) {
+                    challengerId = uuid;
+                    break;
+                }
+            }
+
+            if (challengerId == null) {
+                player.sendMessage(ChatColor.RED + "No pending battle request found.");
+                return true;
+            }
+
+            Player challenger = Bukkit.getPlayer(challengerId);
+            if (challenger == null || !challenger.isOnline()) {
+                player.sendMessage(ChatColor.RED + "The challenger is no longer online.");
+                battleRequests.remove(challengerId);
+                return true;
+            }
+
+            openBettingMenu(challenger, player);
+            battleRequests.remove(challengerId);
+            return true;
+        }
+
+        player.sendMessage(ChatColor.RED + "Usage: /blurbattle [player] or /blurbattle confirm");
+        return true;
     }
 
     private void openBettingMenu(Player player1, Player player2) {
@@ -195,5 +202,64 @@ public final class Blurbattle extends JavaPlugin implements Listener {
 
             event.getItemDrop().remove();
         }
+    }
+    @EventHandler
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        Player player = event.getEntity();
+        if (player.getWorld().getName().equals("blurbattle")) {
+            // Prevent the default death screen
+            event.setDeathMessage(null);
+            event.setDroppedExp(0);
+            event.getDrops().clear();
+
+            // Find the opponent
+            UUID opponentId = null;
+            for (UUID uuid : battleRequests.keySet()) {
+                if (battleRequests.get(uuid).equals(player.getUniqueId()) ||
+                        battleRequests.containsKey(player.getUniqueId()) && battleRequests.get(player.getUniqueId()).equals(uuid)) {
+                    opponentId = uuid;
+                    break;
+                }
+            }
+
+            if (opponentId != null) {
+                Player opponent = Bukkit.getPlayer(opponentId);
+
+                // Handle the loss
+                handleLoss(player, opponent, opponentId);
+            }
+        }
+    }
+
+    private void handleLoss(Player player, Player opponent, UUID opponentId) {         // Teleport the player back to the normal world (e.g., "world")
+        World world = Bukkit.getWorld("world"); // Replace "world" with the actual name of your normal world
+        Location spawnLocation = world.getSpawnLocation();
+        player.teleport(spawnLocation);
+
+        // Restore health and hunger
+        if (originalHealth.containsKey(player.getUniqueId()) && originalHunger.containsKey(player.getUniqueId())) {
+            player.setHealth(originalHealth.get(player.getUniqueId()));
+            player.setFoodLevel(originalHunger.get(player.getUniqueId()));
+        }
+
+        // Announce the winner
+        opponent.sendMessage(ChatColor.GREEN + "You have won the battle!");
+        player.sendMessage(ChatColor.RED + "You have lost the battle.");
+
+        // Give the winner the betted items
+        // (This part needs further implementation based on how you store betted items)
+        // ... (logic to transfer items from both players' betting inventories to the winner) ...
+
+        // Clear related data
+        battleRequests.remove(player.getUniqueId());
+        battleRequests.remove(opponentId);
+        originalLocations.remove(player.getUniqueId());
+        originalLocations.remove(opponentId);
+        originalHealth.remove(player.getUniqueId());
+        originalHealth.remove(opponentId);
+        originalHunger.remove(player.getUniqueId());
+        originalHunger.remove(opponentId);
+        bettingInventories.remove(player.getUniqueId());
+        bettingInventories.remove(opponentId);
     }
 }
