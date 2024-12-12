@@ -20,6 +20,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 public final class Blurbattle extends JavaPlugin implements Listener {
@@ -76,62 +77,69 @@ public final class Blurbattle extends JavaPlugin implements Listener {
 
         Player player = (Player) sender;
 
+        if (args.length == 0) {
+            player.sendMessage(ChatColor.RED + "Usage: /blurbattle <player>");
+            return true;
+        }
+
         if (args.length == 1) {
-            Player target = Bukkit.getPlayer(args[0]);
-            if (target == null || !target.isOnline()) {
-                player.sendMessage(ChatColor.RED + "Player not found or not online.");
-                return true;
-            }
-
-            if (battleRequests.containsKey(player.getUniqueId())) {
-                player.sendMessage(ChatColor.RED + "You already have a pending battle request.");
-                return true;
-            }
-
-            battleRequests.put(player.getUniqueId(), target.getUniqueId());
-            target.sendMessage(ChatColor.YELLOW + player.getName() + " has challenged you to a battle! Type /blurbattle confirm to accept.");
-            player.sendMessage(ChatColor.GREEN + "Battle request sent to " + target.getName() + ".");
-
-            // Timeout for the request
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    if (battleRequests.containsKey(player.getUniqueId())) {
-                        battleRequests.remove(player.getUniqueId());
-                        player.sendMessage(ChatColor.RED + "Your battle request to " + target.getName() + " has expired.");
+            if (args[0].equalsIgnoreCase("confirm")) {
+                // Handle the confirm command
+                UUID challengerId = null;
+                for (Map.Entry<UUID, UUID> entry : battleRequests.entrySet()) {
+                    if (entry.getValue().equals(player.getUniqueId())) {
+                        challengerId = entry.getKey();
+                        break;
                     }
                 }
-            }.runTaskLater(this, 20 * 60); // 60 seconds
-            return true;
-        }
 
-        if (args.length == 1 && args[0].equalsIgnoreCase("confirm")) {
-            UUID challengerId = null;
-            for (UUID uuid : battleRequests.keySet()) {
-                if (battleRequests.get(uuid).equals(player.getUniqueId())) {
-                    challengerId = uuid;
-                    break;
+                if (challengerId == null) {
+                    player.sendMessage(ChatColor.RED + "No pending battle request found.");
+                    return true;
                 }
-            }
 
-            if (challengerId == null) {
-                player.sendMessage(ChatColor.RED + "No pending battle request found.");
-                return true;
-            }
+                Player challenger = Bukkit.getPlayer(challengerId);
+                if (challenger == null || !challenger.isOnline()) {
+                    player.sendMessage(ChatColor.RED + "The challenger is no longer online.");
+                    battleRequests.remove(challengerId);
+                    return true;
+                }
 
-            Player challenger = Bukkit.getPlayer(challengerId);
-            if (challenger == null || !challenger.isOnline()) {
-                player.sendMessage(ChatColor.RED + "The challenger is no longer online.");
+                openBettingMenu(challenger, player);
                 battleRequests.remove(challengerId);
                 return true;
-            }
+            } else {
+                // Handle the challenge command
+                Player target = Bukkit.getPlayer(args[0]);
+                if (target == null) {
+                    player.sendMessage(ChatColor.RED + "Player not found.");
+                    return true;
+                }
 
-            openBettingMenu(challenger, player);
-            battleRequests.remove(challengerId);
-            return true;
+                if (battleRequests.containsKey(player.getUniqueId())) {
+                    player.sendMessage(ChatColor.RED + "You already have a pending battle request.");
+                    return true;
+                }
+
+                battleRequests.put(player.getUniqueId(), target.getUniqueId());
+                target.sendMessage(ChatColor.YELLOW + player.getName() + " has challenged you to a battle! Type /blurbattle confirm to accept.");
+                player.sendMessage(ChatColor.GREEN + "Battle request sent to " + target.getName() + ".");
+
+                // Timeout for the request
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        if (battleRequests.containsKey(player.getUniqueId())) {
+                            battleRequests.remove(player.getUniqueId());
+                            player.sendMessage(ChatColor.RED + "Your battle request to " + target.getName() + " has expired.");
+                        }
+                    }
+                }.runTaskLater(this, 20 * 60); // 60 seconds
+                return true;
+            }
         }
 
-        player.sendMessage(ChatColor.RED + "Usage: /blurbattle [player] or /blurbattle confirm");
+        player.sendMessage(ChatColor.RED + "Usage: /blurbattle <player> or /blurbattle confirm");
         return true;
     }
 
