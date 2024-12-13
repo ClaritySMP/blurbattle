@@ -35,8 +35,6 @@ public final class Blurbattle extends JavaPlugin implements Listener {
     private final HashMap<UUID, Double> originalHealth = new HashMap<>();
     private final HashMap<UUID, Integer> originalHunger = new HashMap<>();
     private final HashMap<UUID, Boolean> readyPlayers = new HashMap<>();
-    private final HashMap<UUID, Long> challengeCooldowns = new HashMap<>();
-    private static final long COOLDOWN_TIME = 60 * 1000;
     private boolean isBattleReady = false;
     private boolean isReopeningInventory = false;
 
@@ -96,7 +94,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
-        // Plugin shutdown logic
+        getLogger().info(ChatColor.GREEN + "Blurbattle is now shutting down");
     }
 
 
@@ -108,16 +106,14 @@ public final class Blurbattle extends JavaPlugin implements Listener {
         }
 
         Player player = (Player) sender;
-        //todo prevent player to himself
         if (args.length == 0) {
             player.sendMessage(ChatColor.RED + "Usage: /blurbattle <player>");
             return true;
         }
-        // todo: add deny command
         if (args.length == 1) {
             if (args[0].equalsIgnoreCase("confirm")) {
                 // Handle the confirm command
-                UUID challengerId = null;
+               UUID challengerId = null;
                 for (Map.Entry<UUID, UUID> entry : battleRequests.entrySet()) {
                     if (entry.getValue().equals(player.getUniqueId())) {
                         challengerId = entry.getKey();
@@ -140,6 +136,37 @@ public final class Blurbattle extends JavaPlugin implements Listener {
                 openBettingMenu(challenger, player);
                 battleRequests.remove(challengerId);
                 return true;
+            } else if (args[0].equalsIgnoreCase("cancel")) {
+                UUID challengerId = null;
+                for (Map.Entry<UUID, UUID> entry : battleRequests.entrySet()) {
+                    if (entry.getValue().equals(player.getUniqueId())) {
+                        challengerId = entry.getKey();
+                        break;
+                    }
+                }
+
+                if (challengerId == null) {
+                    player.sendMessage(ChatColor.RED + "No pending battle request found.");
+                    return true;
+                }
+
+                // Get the opponent's UUID
+                UUID opponentId = battleRequests.get(challengerId);
+
+                // Remove battle requests
+                battleRequests.remove(challengerId);
+                battleRequests.remove(opponentId);
+
+                // Get Player objects
+                Player challenger = Bukkit.getPlayer(challengerId);
+
+                // Send messages
+                if (challenger != null) {
+                    challenger.sendMessage(ChatColor.RED + "The battle request has been canceled.");
+                }
+                player.sendMessage(ChatColor.RED + "You canceled the battle request.");
+
+                return true;
             } else {
                 // Handle the challenge command
                 Player target = Bukkit.getPlayer(args[0]);
@@ -152,9 +179,14 @@ public final class Blurbattle extends JavaPlugin implements Listener {
                     player.sendMessage(ChatColor.RED + "You already have a pending battle request.");
                     return true;
                 }
+                if(player == target) {
+                    player.sendMessage(ChatColor.RED + "You can't send a request to yourself");
+                    return true;
+                }
+
 
                 battleRequests.put(player.getUniqueId(), target.getUniqueId());
-                target.sendMessage(ChatColor.YELLOW + player.getName() + " has challenged you to a battle! Type /blurbattle confirm to accept.");
+                target.sendMessage(ChatColor.YELLOW + player.getName() + " has challenged you to a battle! Type /blurbattle confirm to accept or /blurbattle cancel to deny.");
                 player.sendMessage(ChatColor.GREEN + "Battle request sent to " + target.getName() + ".");
 
                 // Timeout for the request
@@ -176,7 +208,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
     }
 
     private void openBettingMenu(Player player1, Player player2) {
-        //todo make it so that you cant esc it, also add another item to cancel it telling the other person
+        //todo add another item to cancel it telling the other person
         Inventory inventory1 = Bukkit.createInventory(null, 27, ChatColor.BLUE + "Your Bet");
         Inventory inventory2 = Bukkit.createInventory(null, 27, ChatColor.BLUE + "Your Bet");
 
@@ -196,7 +228,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
         player1.openInventory(inventory1);
         player2.openInventory(inventory2);
     }
-
+    //todo close menu
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         UUID playerId = event.getPlayer().getUniqueId();
