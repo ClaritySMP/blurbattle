@@ -34,7 +34,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
     private final HashMap<UUID, Integer> originalHunger = new HashMap<>();
     private final HashMap<UUID, Boolean> readyPlayers = new HashMap<>();
     private boolean isBattleReady = false;
-
+    private boolean isReopeningInventory = false;
     @Override
     public void onEnable() {
         getServer().getPluginManager().registerEvents(this, this);
@@ -209,14 +209,14 @@ public final class Blurbattle extends JavaPlugin implements Listener {
     public void onInventoryClose(InventoryCloseEvent event) {
         if (event.getView().getTitle().equals(ChatColor.BLUE + "Your Bet")) {
             Player player = (Player) event.getPlayer();
-            if (bettingInventories.containsKey(player.getUniqueId())) {
-                // Schedule a delayed task to reopen the inventory with a longer delay
+            if (bettingInventories.containsKey(player.getUniqueId()) && !isReopeningInventory) {
+                isReopeningInventory = true; // Set flag to prevent recursive calls
                 Bukkit.getScheduler().runTaskLater(this, () -> {
-                    // Check if the player is still online before reopening
                     if (player.isOnline()) {
                         player.openInventory(bettingInventories.get(player.getUniqueId()));
                     }
-                }, 2L); // Delay of 2 ticks (100ms)
+                    isReopeningInventory = false; // Reset flag after reopening
+                }, 4L); // Delay of 40 ticks (200ms)
             }
         }
     }
