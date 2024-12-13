@@ -1,5 +1,5 @@
 package org.neo.blurbattle;
-
+//todo add failsafes
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -18,6 +18,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -61,6 +62,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
 
         getLogger().info(ChatColor.GREEN + eyeAscii);
         getLogger().info(ChatColor.GREEN + "Blurbattle plugin has been enabled!");
+        Bukkit.getPluginManager().registerEvents(this, this);
 
     }
 
@@ -77,7 +79,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
         }
 
         Player player = (Player) sender;
-
+        //todo prevent player command and add the autocomplete
         if (args.length == 0) {
             player.sendMessage(ChatColor.RED + "Usage: /blurbattle <player>");
             return true;
@@ -152,6 +154,8 @@ public final class Blurbattle extends JavaPlugin implements Listener {
         bettingInventories.put(player1.getUniqueId(), inventory1);
         bettingInventories.put(player2.getUniqueId(), inventory2);
 
+
+
         ItemStack startBattleItem = new ItemStack(org.bukkit.Material.NETHER_STAR);
         ItemMeta meta = startBattleItem.getItemMeta();
         meta.setDisplayName(START_BATTLE_ITEM_NAME);
@@ -191,48 +195,35 @@ public final class Blurbattle extends JavaPlugin implements Listener {
                 player.sendMessage(ChatColor.GREEN + "You are ready for the battle.");
 
                 // Check if both players are ready
-                if (battleRequests.containsKey(player.getUniqueId()) &&
-                        readyPlayers.containsKey(battleRequests.get(player.getUniqueId()))) {
-                    startBattle(player);
+                UUID opponentUUID = battleRequests.get(player.getUniqueId());
+                if (opponentUUID != null && readyPlayers.containsKey(opponentUUID)) {
+                    startBattle(player, opponentUUID);
                 } else {
                     player.sendMessage(ChatColor.YELLOW + "Waiting for your opponent to ready up.");
                 }
             }
         }
     }
-
-
-
-
+    //todo remove debug
     @EventHandler
-    public void onPlayerDropItem(PlayerDropItemEvent event) {
-        Player player = event.getPlayer();
-        ItemStack item = event.getItemDrop().getItemStack();
-
-        if (item.getItemMeta() != null && START_BATTLE_ITEM_NAME.equals(item.getItemMeta().getDisplayName())) {
-            // Check if player is already ready
-            if (readyPlayers.containsKey(player.getUniqueId())) {
-                player.sendMessage(ChatColor.YELLOW + "You are already ready.");
-                event.getItemDrop().remove();
-                return;
+    public void onInventoryClose(InventoryCloseEvent event) {
+        if (event.getView().getTitle().equals(ChatColor.BLUE + "Your Bet")) {
+            Player player = (Player) event.getPlayer();
+            if (bettingInventories.containsKey(player.getUniqueId())) {
+                // Schedule a delayed task to reopen the inventory with a longer delay
+                Bukkit.getScheduler().runTaskLater(this, () -> {
+                    // Check if the player is still online before reopening
+                    if (player.isOnline()) {
+                        player.openInventory(bettingInventories.get(player.getUniqueId()));
+                    }
+                }, 2L); // Delay of 2 ticks (100ms)
             }
-
-            // Mark player as ready
-            readyPlayers.put(player.getUniqueId(), true);
-            player.sendMessage(ChatColor.GREEN + "You are ready for the battle.");
-
-            // Check if both players are ready
-            if (battleRequests.containsKey(player.getUniqueId()) &&
-                    readyPlayers.containsKey(battleRequests.get(player.getUniqueId()))) {
-                startBattle(player);
-            } else {
-                player.sendMessage(ChatColor.YELLOW + "Waiting for your opponent to ready up.");
-            }
-
-            // Remove the dropped item
-            event.getItemDrop().remove();
         }
     }
+
+
+
+
 
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
@@ -261,32 +252,19 @@ public final class Blurbattle extends JavaPlugin implements Listener {
             }
         }
     }
-    private void startBattle(Player player) {
-        UUID challengerId = null;
-        for (Map.Entry<UUID, UUID> entry : battleRequests.entrySet()) {
-            if (entry.getValue().equals(player.getUniqueId())) {
-                challengerId = entry.getKey();
-                break;
-            }
-        }
+    private void startBattle(Player player, UUID opponentUUID) {
+        Player opponent = Bukkit.getPlayer(opponentUUID);
 
-        if (challengerId != null) {
-            Player challenger = Bukkit.getPlayer(challengerId);
-            if (challenger != null && challenger.isOnline()) {
-                // ... (Your existing battle start logic: teleport, save health, etc.) ...
+        if (opponent != null && opponent.isOnline()) {
+            // ... (Your existing battle start logic: teleport, save health, etc.) ...
 
-                // Clear ready status
-                readyPlayers.remove(player.getUniqueId());
-                readyPlayers.remove(challenger.getUniqueId());
+            // Clear ready status and battle request
+            readyPlayers.remove(player.getUniqueId());
+            readyPlayers.remove(opponentUUID);
+            battleRequests.remove(opponentUUID);
 
-                // Clear battle request
-                battleRequests.remove(challengerId);
-            } else {
-                player.sendMessage(ChatColor.RED + "The challenger is no longer online.");
-                readyPlayers.remove(player.getUniqueId()); // Remove player's ready status
-            }
         } else {
-            player.sendMessage(ChatColor.RED + "No battle request found.");
+            player.sendMessage(ChatColor.RED + "The opponent is no longer online.");
             readyPlayers.remove(player.getUniqueId()); // Remove player's ready status
         }
     }
