@@ -6,3 +6,6 @@ commands:
   blurbattle:
     description: Challenge another player to a PvP battle.
     usage: /blurbattle <player> or /blurbattle confirm
+    aliases: [ pvp ]
+    permission: blurbattle.battle.command
+    permission-message: you don't have permission to pvp, if you think this is an issue, contact the server admin

@@ -7,7 +7,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -20,9 +19,12 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.ArrayList;
+import java.util.List;
 
 public final class Blurbattle extends JavaPlugin implements Listener {
 
@@ -33,12 +35,38 @@ public final class Blurbattle extends JavaPlugin implements Listener {
     private final HashMap<UUID, Double> originalHealth = new HashMap<>();
     private final HashMap<UUID, Integer> originalHunger = new HashMap<>();
     private final HashMap<UUID, Boolean> readyPlayers = new HashMap<>();
+    private final HashMap<UUID, Long> challengeCooldowns = new HashMap<>();
+    private static final long COOLDOWN_TIME = 60 * 1000;
     private boolean isBattleReady = false;
     private boolean isReopeningInventory = false;
+
+    @Override
+
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (args.length == 1){
+            List<String> playerNames = new ArrayList<>();
+            Player[] players = new Player[Bukkit.getServer().getOnlinePlayers().size()];
+            Bukkit.getServer().getOnlinePlayers().toArray(players);
+            for (int i = 0; i < players.length; i++) {
+                playerNames.add(players[i].getName());
+            }
+                return playerNames;
+            } else if (args.length == 2){
+                List<String> arguments = new ArrayList<>();
+                arguments.add("Daddy");
+                arguments.add("JamesHarden#1");
+
+                return arguments;
+            }
+            return null;
+        }
+
     @Override
     public void onEnable() {
         getServer().getPluginManager().registerEvents(this, this);
-        getCommand("blurbattle").setExecutor(this);
+
+        getCommand("blurbattle").setTabCompleter(new tabcomplete());
+
         String eyeAscii =
                 """                                
                                  
@@ -71,6 +99,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
         // Plugin shutdown logic
     }
 
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player)) {
@@ -79,7 +108,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
         }
 
         Player player = (Player) sender;
-        //todo prevent player command and add the autocomplete
+        //todo prevent player to himself
         if (args.length == 0) {
             player.sendMessage(ChatColor.RED + "Usage: /blurbattle <player>");
             return true;
@@ -300,4 +329,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
         bettingInventories.remove(player.getUniqueId());
         bettingInventories.remove(opponentId);
     }
+
 }
+
+
