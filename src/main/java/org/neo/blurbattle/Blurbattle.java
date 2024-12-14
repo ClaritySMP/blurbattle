@@ -1,5 +1,4 @@
 package org.neo.blurbattle;
-//todo add failsafes
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -248,9 +247,10 @@ public final class Blurbattle extends JavaPlugin implements Listener {
     }
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
+        // Handle the "Your Bet" inventory
         if (event.getView().getTitle().equals(ChatColor.BLUE + "Your Bet")) {
             if (event.getSlot() == 26) {
-                event.setCancelled(true);
+                event.setCancelled(true);  // Prevent item from moving
 
                 Player player = (Player) event.getWhoClicked();
 
@@ -271,10 +271,50 @@ public final class Blurbattle extends JavaPlugin implements Listener {
                 } else {
                     player.sendMessage(ChatColor.YELLOW + "Waiting for your opponent to ready up.");
                 }
+            } else if (event.getSlot() == 25) {
+                event.setCancelled(true);  // Prevent item from moving
+                getLogger().info("cancel got hit");
+                Player clickedPlayer = (Player) event.getWhoClicked();
+                UUID otherPlayerId = getOtherPlayerId(clickedPlayer.getUniqueId());
+                Player otherPlayer = Bukkit.getPlayer(otherPlayerId);
+
+                if (otherPlayer != null) {
+                    // Notify both players that the bet was canceled
+                    otherPlayer.sendMessage(ChatColor.RED + clickedPlayer.getName() + " has canceled the bet.");
+                    clickedPlayer.sendMessage(ChatColor.RED + "You have canceled the bet.");
+
+                    // Close both inventories
+                    clickedPlayer.closeInventory();
+                    otherPlayer.closeInventory();
+
+                    // Remove betting-related data to ensure the bet is fully canceled
+                    bettingInventories.remove(clickedPlayer.getUniqueId());
+                    bettingInventories.remove(otherPlayerId);
+
+                    // Optionally clear ready state if you want to reset it when a bet is canceled
+                    readyPlayers.remove(clickedPlayer.getUniqueId());
+                    readyPlayers.remove(otherPlayerId);
+
+                    // If you want to cancel the battle request as well:
+                    battleRequests.remove(clickedPlayer.getUniqueId());
+                    battleRequests.remove(otherPlayerId);
+                }
             }
         }
+
+
     }
 
+
+    // Get the UUID of the other player (assuming there are only two players)
+    private UUID getOtherPlayerId(UUID playerId) {
+        for (UUID id : bettingInventories.keySet()) {
+            if (!id.equals(playerId)) {
+                return id; // Return the other player's ID
+            }
+        }
+        return null; // Should not happen if there are exactly two players
+    }
 
 
 
