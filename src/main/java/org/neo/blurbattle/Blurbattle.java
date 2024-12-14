@@ -14,7 +14,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.event.inventory.InventoryCloseEvent;
-
+import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -242,7 +242,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
             }
         }
     }
-
+    // todo, add inventory failsafe
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         UUID playerId = event.getPlayer().getUniqueId();
@@ -253,25 +253,78 @@ public final class Blurbattle extends JavaPlugin implements Listener {
         // Check if player has a betting inventory
         if (bettingInventories.containsKey(playerId)) {
             BettingInventory bettingInventory = bettingInventories.get(playerId);
+
             // Find the other player (assuming there are only two players)
             UUID otherPlayerId = getOtherPlayerId(playerId);
             Player otherPlayer = Bukkit.getPlayer(otherPlayerId);
 
+            // Return items to the quitting player
+            for (int i = 0; i < bettingInventory.getInventory().getSize(); i++) {
+                ItemStack itemStack = bettingInventory.getInventory().getItem(i);
+
+                if (itemStack != null && itemStack.getType() != Material.AIR) {
+                    // Check for specific items and remove them from the ItemStack
+                    removeItemFromItemStack(itemStack, ChatColor.GREEN + "Start Battle");
+                    removeItemFromItemStack(itemStack, ChatColor.RED + "Cancel Bet");
+
+                    // Add the modified ItemStack (if any) to the player's inventory
+                    event.getPlayer().getInventory().addItem(itemStack);
+
+                }
+            }
+
+            // If the other player is still online, return their items
             if (otherPlayer != null) {
-                // Return items to the other player
-                for (int i = 0; i < bettingInventory.getInventory().getSize(); i++) {
-                    ItemStack itemStack = bettingInventory.getInventory().getItem(i);
-                    if (itemStack != null && itemStack.getType() != Material.AIR) {
-                        otherPlayer.getInventory().addItem(itemStack);
+                BettingInventory otherBettingInventory = bettingInventories.get(otherPlayerId);
+                if (otherBettingInventory != null) {
+                    for (int i = 0; i < otherBettingInventory.getInventory().getSize(); i++) {
+                        ItemStack itemStack = otherBettingInventory.getInventory().getItem(i);
+                        if (itemStack != null && itemStack.getType() != Material.AIR) {
+                            otherPlayer.getInventory().addItem(itemStack);
+                            ItemMeta itemMeta = itemStack.getItemMeta();
+                            if (itemMeta != null && itemMeta.hasDisplayName() &&
+                                    (itemMeta.getDisplayName().equals(ChatColor.GREEN + "Start Battle") ||
+                                            itemMeta.getDisplayName().equals(ChatColor.RED + "Cancel Bet"))) {
+                                // ... (remove from otherBettingInventory)
+                                removeItemByName(otherPlayer, ChatColor.GREEN + "Start Battle");
+                                removeItemByName(otherPlayer, ChatColor.RED + "Cancel Bet");
+                            }
+                        }
                     }
                 }
 
-                // Send message to the other player
-                otherPlayer.sendMessage(ChatColor.RED + event.getPlayer().getName() + " has left the battle. You have received their bet items.");
+                // Notify the other player
+                otherPlayer.sendMessage(ChatColor.RED + event.getPlayer().getName() + " has left, the battle has been cancelled.");
 
                 // Close the other player's inventory
                 otherPlayer.closeInventory();
-                bettingInventories.remove(playerId);
+            }
+
+            // Remove betting inventories for both players
+            bettingInventories.remove(playerId);
+            bettingInventories.remove(otherPlayerId);
+        }
+    }
+    private void removeItemFromItemStack(ItemStack itemStack, String itemName) {
+        int amountToRemove = 0; // Stores the total amount to remove
+
+        // Check if the itemStack has the desired display name
+        if (itemStack.hasItemMeta() && itemStack.getItemMeta().hasDisplayName() &&
+                itemStack.getItemMeta().getDisplayName().equals(itemName)) {
+            amountToRemove = itemStack.getAmount(); // Remove all if it matches exactly
+        }
+
+        // Reduce the amount based on the desired removal amount
+        itemStack.setAmount(Math.max(itemStack.getAmount() - amountToRemove, 0));
+    }
+
+
+    public static void removeItemByName(Player player, String itemName) {
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item != null && item.hasItemMeta() && item.getItemMeta().hasDisplayName() &&
+                    item.getItemMeta().getDisplayName().equals(itemName)) {
+                player.getInventory().removeItem(item);
+                break; // Stop after removing the first matching item
             }
         }
     }
