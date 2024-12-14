@@ -1,7 +1,5 @@
 package org.neo.blurbattle;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
+import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -13,7 +11,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.event.inventory.InventoryCloseEvent;
@@ -241,10 +238,44 @@ public final class Blurbattle extends JavaPlugin implements Listener {
 
                     }
                     isReopeningInventory = false; // Reset flag after reopening
-                }, 4L); // Delay of 40 ticks (200ms)
+                }, 2L); // Delay of 40 ticks (200ms)
             }
         }
     }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        UUID playerId = event.getPlayer().getUniqueId();
+        battleRequests.remove(playerId);
+
+        originalLocations.remove(playerId);
+
+        // Check if player has a betting inventory
+        if (bettingInventories.containsKey(playerId)) {
+            BettingInventory bettingInventory = bettingInventories.get(playerId);
+            // Find the other player (assuming there are only two players)
+            UUID otherPlayerId = getOtherPlayerId(playerId);
+            Player otherPlayer = Bukkit.getPlayer(otherPlayerId);
+
+            if (otherPlayer != null) {
+                // Return items to the other player
+                for (int i = 0; i < bettingInventory.getInventory().getSize(); i++) {
+                    ItemStack itemStack = bettingInventory.getInventory().getItem(i);
+                    if (itemStack != null && itemStack.getType() != Material.AIR) {
+                        otherPlayer.getInventory().addItem(itemStack);
+                    }
+                }
+
+                // Send message to the other player
+                otherPlayer.sendMessage(ChatColor.RED + event.getPlayer().getName() + " has left the battle. You have received their bet items.");
+
+                // Close the other player's inventory
+                otherPlayer.closeInventory();
+                bettingInventories.remove(playerId);
+            }
+        }
+    }
+
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         // Handle the "Your Bet" inventory
@@ -307,7 +338,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
 
 
     // Get the UUID of the other player (assuming there are only two players)
-    private UUID getOtherPlayerId(UUID playerId) {
+    public UUID getOtherPlayerId(UUID playerId) {
         for (UUID id : bettingInventories.keySet()) {
             if (!id.equals(playerId)) {
                 return id; // Return the other player's ID

@@ -11,6 +11,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.Material;
 
 import java.util.UUID;
 import java.util.HashMap;
@@ -84,19 +85,6 @@ public class BettingInventory implements Listener {
     }
 
     //todo close menu
-    @EventHandler
-    public void onPlayerQuit(PlayerQuitEvent event) {
-        UUID playerId = event.getPlayer().getUniqueId();
-        Blurbattle.getInstance().battleRequests.remove(playerId);
-        Blurbattle.getInstance().bettingInventories.remove(playerId);
-        Blurbattle.getInstance().originalLocations.remove(playerId);
-    }
-
-
-
-
-
-
     public Inventory getInventory() {
         return this.inventory;
     }
