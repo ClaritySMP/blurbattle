@@ -28,18 +28,27 @@ import java.util.List;
 
 public final class Blurbattle extends JavaPlugin implements Listener {
 
-    private final HashMap<UUID, UUID> battleRequests = new HashMap<>();
-    private final HashMap<UUID, Location> originalLocations = new HashMap<>();
-    private final HashMap<UUID, Inventory> bettingInventories = new HashMap<>();
-    private final String START_BATTLE_ITEM_NAME = ChatColor.GREEN + "Start Battle";
+    public final HashMap<UUID, UUID> battleRequests = new HashMap<>();
+    public final HashMap<UUID, Location> originalLocations = new HashMap<>();
+    public final HashMap<UUID, BettingInventory> bettingInventories = new HashMap<>();
     private final HashMap<UUID, Double> originalHealth = new HashMap<>();
     private final HashMap<UUID, Integer> originalHunger = new HashMap<>();
-    private final HashMap<UUID, Boolean> readyPlayers = new HashMap<>();
+    public final HashMap<UUID, Boolean> readyPlayers = new HashMap<>();
     private boolean isBattleReady = false;
-    private boolean isReopeningInventory = false;
+    public boolean isReopeningInventory = false;
+    private static Blurbattle instance;
+
+    public HashMap<UUID, BettingInventory> getBettingInventories() {
+        return bettingInventories;
+    }
+    public static Blurbattle getInstance() {
+        if (instance == null) {
+            instance = new Blurbattle();
+        }
+        return instance;
+    }
 
     @Override
-
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1){
             List<String> playerNames = new ArrayList<>();
@@ -88,7 +97,8 @@ public final class Blurbattle extends JavaPlugin implements Listener {
 
         getLogger().info(ChatColor.GREEN + eyeAscii);
         getLogger().info(ChatColor.GREEN + "Blurbattle plugin has been enabled!");
-        Bukkit.getPluginManager().registerEvents(this, this);
+
+
 
     }
 
@@ -208,35 +218,34 @@ public final class Blurbattle extends JavaPlugin implements Listener {
     }
 
     private void openBettingMenu(Player player1, Player player2) {
-        //todo add another item to cancel it telling the other person
-        Inventory inventory1 = Bukkit.createInventory(null, 27, ChatColor.BLUE + "Your Bet");
-        Inventory inventory2 = Bukkit.createInventory(null, 27, ChatColor.BLUE + "Your Bet");
+        BettingInventory inventory1 = new BettingInventory(player1, this);
+        BettingInventory inventory2 = new BettingInventory(player2, this);
 
-        bettingInventories.put(player1.getUniqueId(), inventory1);
+        bettingInventories.put(player1.getUniqueId(), inventory1); // Store BettingInventory objects
         bettingInventories.put(player2.getUniqueId(), inventory2);
 
-
-
-        ItemStack startBattleItem = new ItemStack(org.bukkit.Material.NETHER_STAR);
-        ItemMeta meta = startBattleItem.getItemMeta();
-        meta.setDisplayName(START_BATTLE_ITEM_NAME);
-        startBattleItem.setItemMeta(meta);
-
-        inventory1.setItem(26, startBattleItem);
-        inventory2.setItem(26, startBattleItem);
-
-        player1.openInventory(inventory1);
-        player2.openInventory(inventory2);
+        inventory1.openInventory();
+        inventory2.openInventory();
     }
-    //todo close menu
     @EventHandler
-    public void onPlayerQuit(PlayerQuitEvent event) {
-        UUID playerId = event.getPlayer().getUniqueId();
-        battleRequests.remove(playerId);
-        bettingInventories.remove(playerId);
-        originalLocations.remove(playerId);
-    }
+    public void onInventoryClose(InventoryCloseEvent event) {
+        if (event.getView().getTitle().equals(ChatColor.BLUE + "Your Bet")) {
+            Player player = (Player) event.getPlayer();
+            if (bettingInventories.containsKey(player.getUniqueId()) && !isReopeningInventory) {
+                isReopeningInventory = true; // Set flag to prevent recursive calls
+                Bukkit.getScheduler().runTaskLater(this, () -> {
+                    if (player.isOnline()) {
+                        BettingInventory bettingInventory = bettingInventories.get(player.getUniqueId());
+                        if (bettingInventory != null) {
+                            player.openInventory(bettingInventory.getInventory());
+                        }
 
+                    }
+                    isReopeningInventory = false; // Reset flag after reopening
+                }, 4L); // Delay of 40 ticks (200ms)
+            }
+        }
+    }
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         if (event.getView().getTitle().equals(ChatColor.BLUE + "Your Bet")) {
@@ -265,23 +274,6 @@ public final class Blurbattle extends JavaPlugin implements Listener {
             }
         }
     }
-    //todo remove debug
-    @EventHandler
-    public void onInventoryClose(InventoryCloseEvent event) {
-        if (event.getView().getTitle().equals(ChatColor.BLUE + "Your Bet")) {
-            Player player = (Player) event.getPlayer();
-            if (bettingInventories.containsKey(player.getUniqueId()) && !isReopeningInventory) {
-                isReopeningInventory = true; // Set flag to prevent recursive calls
-                Bukkit.getScheduler().runTaskLater(this, () -> {
-                    if (player.isOnline()) {
-                        player.openInventory(bettingInventories.get(player.getUniqueId()));
-                    }
-                    isReopeningInventory = false; // Reset flag after reopening
-                }, 4L); // Delay of 40 ticks (200ms)
-            }
-        }
-    }
-
 
 
 
@@ -313,7 +305,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
             }
         }
     }
-    private void startBattle(Player player, UUID opponentUUID) {
+    public void startBattle(Player player, UUID opponentUUID) {
         Player opponent = Bukkit.getPlayer(opponentUUID);
 
         if (opponent != null && opponent.isOnline()) {
