@@ -143,21 +143,24 @@ public final class Blurbattle extends JavaPlugin implements Listener {
                 battleRequests.remove(challengerId);
                 return true;
             } else if (args[0].equalsIgnoreCase("cancel")) {
-                UUID challengerId = null;
-                for (Map.Entry<UUID, UUID> entry : battleRequests.entrySet()) {
-                    if (entry.getValue().equals(player.getUniqueId())) {
-                        challengerId = entry.getKey();
-                        break;
+                UUID challengerId = player.getUniqueId();
+                UUID opponentId = battleRequests.get(challengerId);
+
+                if (opponentId == null) {
+                    // Check if the player is the opponent instead
+                    for (Map.Entry<UUID, UUID> entry : battleRequests.entrySet()) {
+                        if (entry.getValue().equals(challengerId)) {
+                            challengerId = entry.getKey();
+                            opponentId = entry.getValue();
+                            break;
+                        }
                     }
                 }
 
-                if (challengerId == null) {
+                if (opponentId == null) {
                     player.sendMessage(ChatColor.RED + "No pending battle request found.");
                     return true;
                 }
-
-                // Get the opponent's UUID
-                UUID opponentId = battleRequests.get(challengerId);
 
                 // Remove battle requests
                 battleRequests.remove(challengerId);
@@ -165,12 +168,22 @@ public final class Blurbattle extends JavaPlugin implements Listener {
 
                 // Get Player objects
                 Player challenger = Bukkit.getPlayer(challengerId);
+                Player opponent = Bukkit.getPlayer(opponentId);
 
                 // Send messages
-                if (challenger != null) {
-                    challenger.sendMessage(ChatColor.RED + "The battle request has been canceled.");
+                if (player.getUniqueId().equals(challengerId)) {
+                    // The sender of the request cancels
+                    if (opponent != null) {
+                        opponent.sendMessage(ChatColor.RED + challenger.getName() + " has canceled the battle request.");
+                    }
+                    player.sendMessage(ChatColor.RED + "You canceled the battle request.");
+                } else {
+                    // The receiver of the request cancels
+                    if (challenger != null) {
+                        challenger.sendMessage(ChatColor.RED + opponent.getName() + " has canceled the battle request.");
+                    }
+                    player.sendMessage(ChatColor.RED + "You canceled the battle request.");
                 }
-                player.sendMessage(ChatColor.RED + "You canceled the battle request.");
 
                 return true;
             } else {
@@ -357,7 +370,6 @@ public final class Blurbattle extends JavaPlugin implements Listener {
                 }
             } else if (event.getSlot() == 25) {
                 event.setCancelled(true);  // Prevent item from moving
-                getLogger().info("cancel got hit");
                 Player clickedPlayer = (Player) event.getWhoClicked();
                 UUID otherPlayerId = getOtherPlayerId(clickedPlayer.getUniqueId());
                 Player otherPlayer = Bukkit.getPlayer(otherPlayerId);
@@ -404,31 +416,52 @@ public final class Blurbattle extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
-        Player player = event.getEntity();
-        if (player.getWorld().getName().equals("blurbattle")) {
-            // Prevent the default death screen
-            event.setDeathMessage(null);
-            event.setDroppedExp(0);
-            event.getDrops().clear();
+        UUID playerId = event.getPlayer().getUniqueId();
+        battleRequests.remove(playerId);
+        originalLocations.remove(playerId);
 
-            // Find the opponent
-            UUID opponentId = null;
-            for (UUID uuid : battleRequests.keySet()) {
-                if (battleRequests.get(uuid).equals(player.getUniqueId()) ||
-                        battleRequests.containsKey(player.getUniqueId()) && battleRequests.get(player.getUniqueId()).equals(uuid)) {
-                    opponentId = uuid;
-                    break;
+        // Check if player has a betting inventory
+        if (bettingInventories.containsKey(playerId)) {
+            BettingInventory bettingInventory = bettingInventories.get(playerId);
+
+            // Find the other player (assuming there are only two players)
+            UUID otherPlayerId = getOtherPlayerId(playerId);
+            Player otherPlayer = Bukkit.getPlayer(otherPlayerId);
+
+
+            if (otherPlayer != null) {
+                BettingInventory otherBettingInventory = bettingInventories.get(otherPlayerId);
+                if (otherBettingInventory != null) {
+                    for (int i = 0; i < otherBettingInventory.getInventory().getSize(); i++) {
+                        ItemStack itemStack = otherBettingInventory.getInventory().getItem(i);
+                        if (itemStack != null && itemStack.getType() != Material.AIR) {
+                            otherPlayer.getInventory().addItem(itemStack);
+                            ItemMeta itemMeta = itemStack.getItemMeta();
+                            if (itemMeta != null && itemMeta.hasDisplayName() &&
+                                    (itemMeta.getDisplayName().equals(ChatColor.GREEN + "Start Battle") ||
+                                            itemMeta.getDisplayName().equals(ChatColor.RED + "Cancel Bet"))) {
+                                // ... (remove from otherBettingInventory)
+                                removeItemByName(otherPlayer, ChatColor.GREEN + "Start Battle");
+                                removeItemByName(otherPlayer, ChatColor.RED + "Cancel Bet");
+                            }
+                        }
+                    }
                 }
+
+                // Notify the other player
+                otherPlayer.sendMessage(ChatColor.RED + event.getPlayer().getName() + " has died.");
+
+                // Close the other player's inventory
+                otherPlayer.closeInventory();
             }
 
-            if (opponentId != null) {
-                Player opponent = Bukkit.getPlayer(opponentId);
-
-                // Handle the loss
-                handleLoss(player, opponent, opponentId);
-            }
+            // Remove betting inventories for both players
+            bettingInventories.remove(playerId);
+            bettingInventories.remove(otherPlayerId);
         }
+
     }
+    // todo, from here on out, new class
     public void startBattle(Player player, UUID opponentUUID) {
         Player opponent = Bukkit.getPlayer(opponentUUID);
 

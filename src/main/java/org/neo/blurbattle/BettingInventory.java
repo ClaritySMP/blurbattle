@@ -57,7 +57,6 @@ public class BettingInventory implements Listener {
     }
 
     public void openBettingMenu(Player player1, Player player2, HashMap<UUID, BettingInventory> bettingInventories) {
-        //todo add another item to cancel it telling the other person
         Inventory inventory1 = Bukkit.createInventory(null, 27, ChatColor.BLUE + "Your Bet");
         Inventory inventory2 = Bukkit.createInventory(null, 27, ChatColor.BLUE + "Your Bet");
 
@@ -84,7 +83,6 @@ public class BettingInventory implements Listener {
         player2.openInventory(inventory2);
     }
 
-    //todo close menu
     public Inventory getInventory() {
         return this.inventory;
     }
