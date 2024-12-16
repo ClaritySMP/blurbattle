@@ -27,12 +27,16 @@ public final class Blurbattle extends JavaPlugin implements Listener {
     public final HashMap<UUID, UUID> battleRequests = new HashMap<>();
     public final HashMap<UUID, Location> originalLocations = new HashMap<>();
     public final HashMap<UUID, BettingInventory> bettingInventories = new HashMap<>();
-    private final HashMap<UUID, Double> originalHealth = new HashMap<>();
-    private final HashMap<UUID, Integer> originalHunger = new HashMap<>();
+    public final HashMap<UUID, Double> originalHealth = new HashMap<>();
+    public final HashMap<UUID, Integer> originalHunger = new HashMap<>();
     public final HashMap<UUID, Boolean> readyPlayers = new HashMap<>();
+    public final HashMap<UUID, UUID> battleplayers = new HashMap<>();
     private boolean isBattleReady = false;
     public boolean isReopeningInventory = false;
     private static Blurbattle instance;
+    private pvpmap pvpMap;
+
+
 
     public HashMap<UUID, BettingInventory> getBettingInventories() {
         return bettingInventories;
@@ -43,6 +47,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
         }
         return instance;
     }
+
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
@@ -58,7 +63,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
                 List<String> arguments = new ArrayList<>();
                 arguments.add("Daddy");
                 arguments.add("JamesHarden#1");
-
+                // wtf is this, i never wrote this
                 return arguments;
             }
             return null;
@@ -138,7 +143,9 @@ public final class Blurbattle extends JavaPlugin implements Listener {
                     battleRequests.remove(challengerId);
                     return true;
                 }
-
+                UUID opponentId = battleRequests.get(challengerId);
+                battleplayers.put(challengerId, opponentId);
+                battleplayers.put(opponentId, challengerId);
                 openBettingMenu(challenger, player);
                 battleRequests.remove(challengerId);
                 return true;
@@ -162,7 +169,8 @@ public final class Blurbattle extends JavaPlugin implements Listener {
                     return true;
                 }
 
-                // Remove battle requests
+
+                // Then remove from battleRequests
                 battleRequests.remove(challengerId);
                 battleRequests.remove(opponentId);
 
@@ -348,8 +356,12 @@ public final class Blurbattle extends JavaPlugin implements Listener {
         if (event.getView().getTitle().equals(ChatColor.BLUE + "Your Bet")) {
             if (event.getSlot() == 26) {
                 event.setCancelled(true);  // Prevent item from moving
-
                 Player player = (Player) event.getWhoClicked();
+                Bukkit.getLogger().info("Player " + player.getName() + " clicked the Ready button.");
+
+
+
+
 
                 // Check if player is already ready
                 if (readyPlayers.containsKey(player.getUniqueId())) {
@@ -358,15 +370,33 @@ public final class Blurbattle extends JavaPlugin implements Listener {
                 }
 
                 // Mark player as ready
-                readyPlayers.put(player.getUniqueId(), true);
-                player.sendMessage(ChatColor.GREEN + "You are ready for the battle.");
 
+                UUID playerUUID = player.getUniqueId();
+                readyPlayers.put(playerUUID, true);
+                player.sendMessage(ChatColor.GREEN + "You are ready for the battle.");
+                Bukkit.getLogger().info("Player is ready: " + readyPlayers.containsKey(player.getUniqueId()));
                 // Check if both players are ready
-                UUID opponentUUID = battleRequests.get(player.getUniqueId());
-                if (opponentUUID != null && readyPlayers.containsKey(opponentUUID)) {
+                UUID opponentUUID = battleplayers.get(playerUUID);
+                getLogger().info(battleRequests.toString());
+                getLogger().info(battleplayers.toString());
+                getLogger().info("Current readyPlayers: " + readyPlayers.toString());
+                if (opponentUUID != null) {
+                    getLogger().info(opponentUUID.toString());
+                } else {
+                    getLogger().info("no");
+                }
+                if (playerUUID != null) {
+                    getLogger().info(playerUUID.toString());
+                } else {
+                    getLogger().info("no");
+                }
+                // Check if both players are ready
+                if (opponentUUID != null && readyPlayers.containsKey(playerUUID) && readyPlayers.containsKey(opponentUUID)) {
+                    Bukkit.getLogger().info("Both players are ready!");
                     startBattle(player, opponentUUID);
                 } else {
                     player.sendMessage(ChatColor.YELLOW + "Waiting for your opponent to ready up.");
+
                 }
             } else if (event.getSlot() == 25) {
                 event.setCancelled(true);  // Prevent item from moving
@@ -461,54 +491,8 @@ public final class Blurbattle extends JavaPlugin implements Listener {
         }
 
     }
-    // todo, from here on out, new class
-    public void startBattle(Player player, UUID opponentUUID) {
-        Player opponent = Bukkit.getPlayer(opponentUUID);
-
-        if (opponent != null && opponent.isOnline()) {
-            // ... (Your existing battle start logic: teleport, save health, etc.) ...
-
-            // Clear ready status and battle request
-            readyPlayers.remove(player.getUniqueId());
-            readyPlayers.remove(opponentUUID);
-            battleRequests.remove(opponentUUID);
-
-        } else {
-            player.sendMessage(ChatColor.RED + "The opponent is no longer online.");
-            readyPlayers.remove(player.getUniqueId()); // Remove player's ready status
-        }
-    }
-
-    private void handleLoss(Player player, Player opponent, UUID opponentId) {         // Teleport the player back to the normal world (e.g., "world")
-        World world = Bukkit.getWorld("world"); // Replace "world" with the actual name of your normal world
-        Location spawnLocation = world.getSpawnLocation();
-        player.teleport(spawnLocation);
-
-        // Restore health and hunger
-        if (originalHealth.containsKey(player.getUniqueId()) && originalHunger.containsKey(player.getUniqueId())) {
-            player.setHealth(originalHealth.get(player.getUniqueId()));
-            player.setFoodLevel(originalHunger.get(player.getUniqueId()));
-        }
-
-        // Announce the winner
-        opponent.sendMessage(ChatColor.GREEN + "You have won the battle!");
-        player.sendMessage(ChatColor.RED + "You have lost the battle.");
-
-        // Give the winner the betted items
-        // (This part needs further implementation based on how you store betted items)
-        // ... (logic to transfer items from both players' betting inventories to the winner) ...
-
-        // Clear related data
-        battleRequests.remove(player.getUniqueId());
-        battleRequests.remove(opponentId);
-        originalLocations.remove(player.getUniqueId());
-        originalLocations.remove(opponentId);
-        originalHealth.remove(player.getUniqueId());
-        originalHealth.remove(opponentId);
-        originalHunger.remove(player.getUniqueId());
-        originalHunger.remove(opponentId);
-        bettingInventories.remove(player.getUniqueId());
-        bettingInventories.remove(opponentId);
+    private void startBattle(Player player, UUID opponentUUID) {
+        pvpMap.startBattle(player, opponentUUID); // Call startBattle from the pvpmap instance
     }
 
 }

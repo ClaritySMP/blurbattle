@@ -1,7 +1,7 @@
 1. read all todos in code .
 2. seperate into classes bc why not .
 3. ensure no items are lost .
-4. add command failsafes (1. cancel from host)
+4. add command failsafes (1. cancel removes readines)
 5. remove debug and replace with debug framework
 6. config file
 
