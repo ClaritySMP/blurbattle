@@ -9,26 +9,45 @@ import org.bukkit.entity.Player;
 import java.util.UUID;
 
 public class pvpmap {
-    // todo, from here on out, new class
+
     public void startBattle(Player player, UUID opponentUUID) {
         Player opponent = Bukkit.getPlayer(opponentUUID);
 
         if (opponent != null && opponent.isOnline()) {
             // ... (Your existing battle start logic: teleport, save health, etc.) ...
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
+                    "mvtp " + player.getName() + " blurbattle");
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
+                    "mvtp " + opponent.getName() + " blurbattle");
+
+            // TODO: Fully heal and restore players' hunger after teleport
+            Blurbattle.getInstance().originalHealth.put(player.getUniqueId(), player.getHealth());
+            Blurbattle.getInstance().originalHunger.put(player.getUniqueId(), player.getFoodLevel());
+
+            Blurbattle.getInstance().originalHealth.put(opponent.getUniqueId(), opponent.getHealth());
+            Blurbattle.getInstance().originalHunger.put(opponent.getUniqueId(), opponent.getFoodLevel());
+            player.setHealth(20.0);
+            player.setFoodLevel(20);
+            opponent.setHealth(20.0);
+            opponent.setFoodLevel(20);
 
             // Clear ready status and battle request
             Blurbattle.getInstance().readyPlayers.remove(player.getUniqueId());
+            Blurbattle.getInstance().battleRequests.remove(player.getUniqueId());
             Blurbattle.getInstance().readyPlayers.remove(opponentUUID);
             Blurbattle.getInstance().battleRequests.remove(opponentUUID);
 
         } else {
             player.sendMessage(ChatColor.RED + "The opponent is no longer online.");
             Blurbattle.getInstance().readyPlayers.remove(player.getUniqueId()); // Remove player's ready status
+            Blurbattle.getInstance().readyPlayers.remove(opponentUUID);
+            Blurbattle.getInstance().battleRequests.remove(player.getUniqueId());
+            Blurbattle.getInstance().battleRequests.remove(opponentUUID);
         }
     }
 
-    private void handleLoss(Player player, Player opponent, UUID opponentId) {         // Teleport the player back to the normal world (e.g., "world")
-        World world = Bukkit.getWorld("world"); // Replace "world" with the actual name of your normal world
+    private void handleLoss(Player player, Player opponent, UUID opponentId) {
+        World world = Bukkit.getWorld("blurbattle"); // Replace "world" with the actual name of your normal world
         Location spawnLocation = world.getSpawnLocation();
         player.teleport(spawnLocation);
 

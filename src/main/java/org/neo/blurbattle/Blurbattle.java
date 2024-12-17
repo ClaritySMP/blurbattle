@@ -1,4 +1,5 @@
 package org.neo.blurbattle;
+
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -43,31 +44,13 @@ public final class Blurbattle extends JavaPlugin implements Listener {
     }
     public static Blurbattle getInstance() {
         if (instance == null) {
-            instance = new Blurbattle();
+            throw new IllegalStateException("Plugin instance not initialized!");
         }
         return instance;
     }
 
 
-    @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if (args.length == 1){
-            List<String> playerNames = new ArrayList<>();
-            Player[] players = new Player[Bukkit.getServer().getOnlinePlayers().size()];
-            Bukkit.getServer().getOnlinePlayers().toArray(players);
-            for (int i = 0; i < players.length; i++) {
-                playerNames.add(players[i].getName());
-            }
-                return playerNames;
-            } else if (args.length == 2){
-                List<String> arguments = new ArrayList<>();
-                arguments.add("Daddy");
-                arguments.add("JamesHarden#1");
-                // wtf is this, i never wrote this
-                return arguments;
-            }
-            return null;
-        }
+
 
     @Override
     public void onEnable() {
@@ -99,7 +82,8 @@ public final class Blurbattle extends JavaPlugin implements Listener {
         getLogger().info(ChatColor.GREEN + eyeAscii);
         getLogger().info(ChatColor.GREEN + "Blurbattle plugin has been enabled!");
 
-
+        this.pvpMap = new pvpmap();
+        instance = this;
 
     }
 
@@ -309,6 +293,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
                                 // ... (remove from otherBettingInventory)
                                 removeItemByName(otherPlayer, ChatColor.GREEN + "Start Battle");
                                 removeItemByName(otherPlayer, ChatColor.RED + "Cancel Bet");
+
                             }
                         }
                     }
@@ -319,11 +304,16 @@ public final class Blurbattle extends JavaPlugin implements Listener {
 
                 // Close the other player's inventory
                 otherPlayer.closeInventory();
+
             }
 
             // Remove betting inventories for both players
             bettingInventories.remove(playerId);
             bettingInventories.remove(otherPlayerId);
+            readyPlayers.remove(otherPlayerId);
+            readyPlayers.remove(playerId);
+            battleplayers.remove(playerId);
+            battleplayers.remove(otherPlayerId);
         }
     }
     private void removeItemFromItemStack(ItemStack itemStack, String itemName) {
@@ -357,7 +347,6 @@ public final class Blurbattle extends JavaPlugin implements Listener {
             if (event.getSlot() == 26) {
                 event.setCancelled(true);  // Prevent item from moving
                 Player player = (Player) event.getWhoClicked();
-                Bukkit.getLogger().info("Player " + player.getName() + " clicked the Ready button.");
 
 
 
@@ -374,25 +363,12 @@ public final class Blurbattle extends JavaPlugin implements Listener {
                 UUID playerUUID = player.getUniqueId();
                 readyPlayers.put(playerUUID, true);
                 player.sendMessage(ChatColor.GREEN + "You are ready for the battle.");
-                Bukkit.getLogger().info("Player is ready: " + readyPlayers.containsKey(player.getUniqueId()));
                 // Check if both players are ready
                 UUID opponentUUID = battleplayers.get(playerUUID);
-                getLogger().info(battleRequests.toString());
-                getLogger().info(battleplayers.toString());
-                getLogger().info("Current readyPlayers: " + readyPlayers.toString());
-                if (opponentUUID != null) {
-                    getLogger().info(opponentUUID.toString());
-                } else {
-                    getLogger().info("no");
-                }
-                if (playerUUID != null) {
-                    getLogger().info(playerUUID.toString());
-                } else {
-                    getLogger().info("no");
-                }
+
+
                 // Check if both players are ready
                 if (opponentUUID != null && readyPlayers.containsKey(playerUUID) && readyPlayers.containsKey(opponentUUID)) {
-                    Bukkit.getLogger().info("Both players are ready!");
                     startBattle(player, opponentUUID);
                 } else {
                     player.sendMessage(ChatColor.YELLOW + "Waiting for your opponent to ready up.");
@@ -488,6 +464,10 @@ public final class Blurbattle extends JavaPlugin implements Listener {
             // Remove betting inventories for both players
             bettingInventories.remove(playerId);
             bettingInventories.remove(otherPlayerId);
+            readyPlayers.remove(otherPlayerId);
+            readyPlayers.remove(playerId);
+            battleplayers.remove(playerId);
+            battleplayers.remove(otherPlayerId);
         }
 
     }
