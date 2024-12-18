@@ -70,14 +70,15 @@ public class pvpmap {
 
 
     public void handleLoss(Player player, Player opponent, UUID opponentId) {
+        //todo use mvtp
         World world = Bukkit.getWorld("world"); // Replace "world" with the actual name of your normal world
         Location spawnLocation = world.getSpawnLocation();
-        player.teleport(spawnLocation);
+        opponent.teleport(spawnLocation);
 
         // Restore health and hunger
-        if (Blurbattle.getInstance().originalHealth.containsKey(player.getUniqueId()) && Blurbattle.getInstance().originalHunger.containsKey(player.getUniqueId())) {
-            player.setHealth(Blurbattle.getInstance().originalHealth.get(player.getUniqueId()));
-            player.setFoodLevel(Blurbattle.getInstance().originalHunger.get(player.getUniqueId()));
+        if (Blurbattle.getInstance().originalHealth.containsKey(opponent.getUniqueId()) && Blurbattle.getInstance().originalHunger.containsKey(opponent.getUniqueId())) {
+            opponent.setHealth(Blurbattle.getInstance().originalHealth.get(player.getUniqueId()));
+            opponent.setFoodLevel(Blurbattle.getInstance().originalHunger.get(player.getUniqueId()));
         }
 
         // Announce the winner
