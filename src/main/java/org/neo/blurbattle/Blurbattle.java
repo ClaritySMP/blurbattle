@@ -23,6 +23,7 @@ import java.util.UUID;
 import java.util.ArrayList;
 import java.util.List;
 
+
 public final class Blurbattle extends JavaPlugin implements Listener {
 
     public final HashMap<UUID, UUID> battleRequests = new HashMap<>();
@@ -425,8 +426,34 @@ public final class Blurbattle extends JavaPlugin implements Listener {
         UUID playerId = event.getPlayer().getUniqueId();
         battleRequests.remove(playerId);
         originalLocations.remove(playerId);
+        Player player = event.getEntity();
 
-        // Check if player has a betting inventory
+        // Check if the death occurred in the "blurbattle" world
+        if (player.getWorld().getName().equals("blurbattle")) {
+            Blurbattle.getInstance().getLogger().info("e"); // For debugging
+
+            // Prevent the default death screen
+            event.setDeathMessage(null);
+            event.setDroppedExp(0);
+            event.getDrops().clear();
+
+            // Find the opponent
+            UUID opponentId = null;
+            for (UUID uuid : Blurbattle.getInstance().battleRequests.keySet()) {
+                if (Blurbattle.getInstance().battleRequests.get(uuid).equals(player.getUniqueId()) ||
+                        Blurbattle.getInstance().battleRequests.containsKey(player.getUniqueId()) && Blurbattle.getInstance().battleRequests.get(player.getUniqueId()).equals(uuid)) {
+                    opponentId = uuid;
+                    break;
+                }
+            }
+
+            if (opponentId != null) {
+                Player opponent = Bukkit.getPlayer(opponentId);
+
+                // Handle the loss
+                pvpMap.handleLoss(player, opponent, opponentId);
+            }
+        }        // Check if player has a betting inventory
         if (bettingInventories.containsKey(playerId)) {
             BettingInventory bettingInventory = bettingInventories.get(playerId);
 

@@ -15,10 +15,16 @@ repositories {
         name = "sonatype"
         url = "https://oss.sonatype.org/content/groups/public/"
     }
+    maven {
+        name = "codemc"
+        url = "https://repo.codemc.io/repository/maven-public/"
+    }
+    maven { url = "https://repo.onarandombox.com/content/groups/public/" }
 }
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21-R0.1-SNAPSHOT")
+    compileOnly("com.onarandombox.multiversecore:Multiverse-Core:4.3.1")
 }
 
 def targetJavaVersion = 21

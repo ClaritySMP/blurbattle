@@ -1,9 +1,8 @@
 1. read all todos in code .
-2. seperate into classes bc why not .
-3. ensure no items are lost .
-4. add command failsafes (1. cancel removes readines)
 5. remove debug and replace with debug framework
 6. config file
+7. use a infinite lobby system
+8. world reset
 
 config file:
 - world name

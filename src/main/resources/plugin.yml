@@ -2,6 +2,7 @@ name: Blurbattle
 version: 1.0.0
 main: org.neo.blurbattle.Blurbattle
 api-version: 1.21
+softdepend: ['Multiverse-Core', 'Multiverse-Inventories']
 commands:
   blurbattle:
     description: Challenge another player to a PvP battle.

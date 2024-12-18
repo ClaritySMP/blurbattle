@@ -5,20 +5,31 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
-
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.Sound;
+import com.onarandombox.MultiverseCore.api.Core;
 import java.util.UUID;
+import com.onarandombox.MultiverseCore.api.MVWorldManager;
 
 public class pvpmap {
-
+    // todo tp with direction and replace message with title
     public void startBattle(Player player, UUID opponentUUID) {
         Player opponent = Bukkit.getPlayer(opponentUUID);
+        Core mvcore = (Core) Bukkit.getServer().getPluginManager().getPlugin("Multiverse-Core");
+        MVWorldManager worldManager = mvcore.getMVWorldManager();
 
         if (opponent != null && opponent.isOnline()) {
-            // ... (Your existing battle start logic: teleport, save health, etc.) ...
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
-                    "mvtp " + player.getName() + " blurbattle");
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
-                    "mvtp " + opponent.getName() + " blurbattle");
+
+            World world = worldManager.getMVWorld("blurbattle").getCBWorld();
+
+            // Define player locations within the "blurbattle" world
+            Location playerLocation = new Location(world, 27.5, 0, 0.5, 90, 0);
+            Location opponentLocation = new Location(world, -27.5, 0, 0.5, 270, 0);
+
+            // Teleport players directly using the Multiverse-Core API
+            player.teleport(playerLocation);
+            opponent.teleport(opponentLocation);
 
             // TODO: Fully heal and restore players' hunger after teleport
             Blurbattle.getInstance().originalHealth.put(player.getUniqueId(), player.getHealth());
@@ -36,7 +47,18 @@ public class pvpmap {
             Blurbattle.getInstance().battleRequests.remove(player.getUniqueId());
             Blurbattle.getInstance().readyPlayers.remove(opponentUUID);
             Blurbattle.getInstance().battleRequests.remove(opponentUUID);
-
+            Blurbattle.getInstance().bettingInventories.remove(player.getUniqueId());
+            Blurbattle.getInstance().bettingInventories.remove(opponentUUID);
+            player.closeInventory();
+            opponent.closeInventory();
+            player.playSound(player.getLocation(), Sound.ITEM_GOAT_HORN_SOUND_0, 1.0f, 1.0f);
+            opponent.playSound(player.getLocation(), Sound.ITEM_GOAT_HORN_SOUND_0, 1.0f, 1.0f);
+            player.sendTitle(ChatColor.BLUE + "Let the battle BEGIN!",
+                    ChatColor.AQUA + "May the best player win!",
+                    10, 60, 10); // Customize fade times (ticks)
+            opponent.sendTitle(ChatColor.BLUE + "Let the battle BEGIN!",
+                    ChatColor.AQUA + "May the best player win!",
+                    10, 60, 10);
         } else {
             player.sendMessage(ChatColor.RED + "The opponent is no longer online.");
             Blurbattle.getInstance().readyPlayers.remove(player.getUniqueId()); // Remove player's ready status
@@ -46,8 +68,9 @@ public class pvpmap {
         }
     }
 
-    private void handleLoss(Player player, Player opponent, UUID opponentId) {
-        World world = Bukkit.getWorld("blurbattle"); // Replace "world" with the actual name of your normal world
+
+    public void handleLoss(Player player, Player opponent, UUID opponentId) {
+        World world = Bukkit.getWorld("world"); // Replace "world" with the actual name of your normal world
         Location spawnLocation = world.getSpawnLocation();
         player.teleport(spawnLocation);
 
@@ -76,6 +99,8 @@ public class pvpmap {
         Blurbattle.getInstance().originalHunger.remove(opponentId);
         Blurbattle.getInstance().bettingInventories.remove(player.getUniqueId());
         Blurbattle.getInstance().bettingInventories.remove(opponentId);
+        Blurbattle.getInstance().battleplayers.remove(player.getUniqueId());
+        Blurbattle.getInstance().battleplayers.remove(opponentId);
     }
 
 }
