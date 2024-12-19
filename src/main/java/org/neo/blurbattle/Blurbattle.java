@@ -436,7 +436,16 @@ public final class Blurbattle extends JavaPlugin implements Listener {
             event.setDroppedExp(0);
             event.getDrops().clear();
             Bukkit.getScheduler().runTask(Blurbattle.getInstance(), () -> {
+                World world = Bukkit.getWorld("world");
+                double x = 100;
+                double y = 64;
+                double z = 100;
+                float yaw = 0;
+                float pitch = 0;
+
+                Location respawnLocation = new Location(world, x, y, z, yaw, pitch);
                 player.spigot().respawn(); // Force the player to respawn
+                player.teleport(respawnLocation); // Teleport to the desired location
             });
 
             // Find the opponent
