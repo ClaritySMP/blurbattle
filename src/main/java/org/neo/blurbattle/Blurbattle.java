@@ -6,7 +6,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -15,13 +14,10 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.event.inventory.InventoryCloseEvent;
-import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.ArrayList;
-import java.util.List;
 
 
 public final class Blurbattle extends JavaPlugin implements Listener {
@@ -131,6 +127,9 @@ public final class Blurbattle extends JavaPlugin implements Listener {
                 UUID opponentId = battleRequests.get(challengerId);
                 battleplayers.put(challengerId, opponentId);
                 battleplayers.put(opponentId, challengerId);
+                originalLocations.put(player.getUniqueId(), player.getLocation());
+                originalLocations.put(challengerId, challenger.getLocation());
+                getLogger().info(originalLocations.toString());
                 openBettingMenu(challenger, player);
                 battleRequests.remove(challengerId);
                 return true;
@@ -503,6 +502,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
 
     }
     private void startBattle(Player player, UUID opponentUUID) {
+
         pvpMap.startBattle(player, opponentUUID); // Call startBattle from the pvpmap instance
     }
 

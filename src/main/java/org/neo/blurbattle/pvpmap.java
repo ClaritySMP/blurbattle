@@ -5,23 +5,24 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.Sound;
 import com.onarandombox.MultiverseCore.api.Core;
 import java.util.UUID;
 import com.onarandombox.MultiverseCore.api.MVWorldManager;
 
 public class pvpmap {
+    Core mvcore = (Core) Bukkit.getServer().getPluginManager().getPlugin("Multiverse-Core");
+    MVWorldManager worldManager = mvcore.getMVWorldManager();
     // todo tp with direction and replace message with title
     public void startBattle(Player player, UUID opponentUUID) {
         Player opponent = Bukkit.getPlayer(opponentUUID);
-        Core mvcore = (Core) Bukkit.getServer().getPluginManager().getPlugin("Multiverse-Core");
-        MVWorldManager worldManager = mvcore.getMVWorldManager();
+
 
         if (opponent != null && opponent.isOnline()) {
 
             World world = worldManager.getMVWorld("blurbattle").getCBWorld();
+
+
 
             // Define player locations within the "blurbattle" world
             Location playerLocation = new Location(world, 27.5, 0, 0.5, 90, 0);
@@ -70,12 +71,20 @@ public class pvpmap {
 
 
     public void handleLoss(Player player, Player opponent, UUID opponentId) {
-        //todo use mvtp
-        World world = Bukkit.getWorld("world"); // Replace "world" with the actual name of your normal world
-        Location spawnLocation = world.getSpawnLocation();
-        opponent.teleport(spawnLocation);
 
-        // Restore health and hunger
+        World world = worldManager.getMVWorld("world").getCBWorld();
+        Location opponentStoredLocation = Blurbattle.getInstance().originalLocations.getOrDefault(opponentId, null);
+
+        Blurbattle.getInstance().getLogger().info(opponentStoredLocation.getX() + " " + opponentStoredLocation.getY() + " " + opponentStoredLocation.getZ());
+
+        // Define player locations within the "blurbattle" world
+        Location playerLocation = new Location(world, -27.5, 0, 0.5, 270, 0);
+        Location opponentLocation = new Location(world, opponentStoredLocation.getX(), opponentStoredLocation.getY(), opponentStoredLocation.getZ(), opponentStoredLocation.getYaw(), opponentStoredLocation.getPitch());
+
+        // Teleport players directly using the Multiverse-Core API
+        player.teleport(playerLocation);
+        opponent.teleport(opponentLocation);
+
         if (Blurbattle.getInstance().originalHealth.containsKey(opponent.getUniqueId()) && Blurbattle.getInstance().originalHunger.containsKey(opponent.getUniqueId())) {
             opponent.setHealth(Blurbattle.getInstance().originalHealth.get(player.getUniqueId()));
             opponent.setFoodLevel(Blurbattle.getInstance().originalHunger.get(player.getUniqueId()));
