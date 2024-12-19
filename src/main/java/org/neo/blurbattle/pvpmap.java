@@ -9,6 +9,8 @@ import org.bukkit.Sound;
 import com.onarandombox.MultiverseCore.api.Core;
 import java.util.UUID;
 import com.onarandombox.MultiverseCore.api.MVWorldManager;
+import org.bukkit.inventory.ItemStack;
+import java.util.List;
 
 public class pvpmap {
     Core mvcore = (Core) Bukkit.getServer().getPluginManager().getPlugin("Multiverse-Core");
@@ -75,7 +77,6 @@ public class pvpmap {
         World world = worldManager.getMVWorld("world").getCBWorld();
         Location opponentStoredLocation = Blurbattle.getInstance().opoglocation.getOrDefault(opponentId, null);
 
-        Blurbattle.getInstance().getLogger().info(opponentStoredLocation.getX() + " " + opponentStoredLocation.getY() + " " + opponentStoredLocation.getZ());
 
         // Define player locations within the "blurbattle" world
         Location playerLocation = new Location(world, -27.5, 0, 0.5, 270, 0);
@@ -97,6 +98,22 @@ public class pvpmap {
         // Give the winner the betted items
         // (This part needs further implementation based on how you store betted items)
         // ... (logic to transfer items from both players' betting inventories to the winner) ...
+        List<ItemStack> playerItems = Blurbattle.getInstance().playerBets.get(player);
+        List<ItemStack> opponentItems = Blurbattle.getInstance().playerBets.get(opponent);
+
+        // Check if player betted items exist, if so, give them to the opponent
+        if (playerItems != null) {
+            for (ItemStack item : playerItems) {
+                opponent.getInventory().addItem(item);
+            }
+        }
+
+        // Check if opponent betted items exist, if so, give them to the player
+        if (opponentItems != null) {
+            for (ItemStack item : opponentItems) {
+                opponent.getInventory().addItem(item);
+            }
+        }
 
         // Clear related data
         Blurbattle.getInstance().battleRequests.remove(player.getUniqueId());

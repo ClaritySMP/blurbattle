@@ -18,7 +18,8 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-
+import java.util.List;
+import java.util.ArrayList;
 
 public final class Blurbattle extends JavaPlugin implements Listener {
 
@@ -30,6 +31,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
     public final HashMap<UUID, Integer> originalHunger = new HashMap<>();
     public final HashMap<UUID, Boolean> readyPlayers = new HashMap<>();
     public final HashMap<UUID, UUID> battleplayers = new HashMap<>();
+    public final HashMap<Player, List<ItemStack>> playerBets = new HashMap<>();
     private boolean isBattleReady = false;
     public boolean isReopeningInventory = false;
     private static Blurbattle instance;
@@ -132,7 +134,6 @@ public final class Blurbattle extends JavaPlugin implements Listener {
                 originalLocations.put(challengerId, challenger.getLocation());
                 opoglocation.put(player.getUniqueId(), player.getLocation());
                 opoglocation.put(challengerId, challenger.getLocation());
-                getLogger().info(originalLocations.toString());
                 openBettingMenu(challenger, player);
                 battleRequests.remove(challengerId);
                 return true;
@@ -372,7 +373,19 @@ public final class Blurbattle extends JavaPlugin implements Listener {
 
                 // Check if both players are ready
                 if (opponentUUID != null && readyPlayers.containsKey(playerUUID) && readyPlayers.containsKey(opponentUUID)) {
-                    startBattle(player, opponentUUID);
+                    Player opponent = Bukkit.getPlayer(opponentUUID);
+                    if (opponent != null && readyPlayers.containsKey(player.getUniqueId()) && readyPlayers.containsKey(opponentUUID)) {
+                        // Assuming you have a method to get items for the players (e.g., from betting inventories)
+                        List<ItemStack> playerItems = getPlayerBet(player);   // You will define this method to get the player's items
+                        List<ItemStack> opponentItems = getPlayerBet(opponent); // Similarly, for the opponent
+
+                        // Store the player and their items in the HashMap
+                        playerBets.put(player, playerItems);
+                        playerBets.put(opponent, opponentItems);
+
+                        // Call the method to start the battle
+                        startBattle(player, opponentUUID);
+                    }
                 } else {
                     player.sendMessage(ChatColor.YELLOW + "Waiting for your opponent to ready up.");
 
@@ -410,6 +423,40 @@ public final class Blurbattle extends JavaPlugin implements Listener {
 
     }
 
+    private List<ItemStack> getPlayerBet(Player player) {
+        // Convert player's inventory items from array to list
+        BettingInventory bettingInventory = bettingInventories.get(player.getUniqueId());
+        if (bettingInventory == null) {
+            return new ArrayList<>(); // Return an empty list if no betting inventory is found
+        }
+
+        // Convert betting inventory items from array to list
+        ItemStack[] inventoryItems = bettingInventory.getInventory().getContents();
+        List<ItemStack> playerItems = new ArrayList<>();
+
+        // Convert the array to a list, ignoring null items
+        for (ItemStack item : inventoryItems) {
+            if (item != null) {
+                playerItems.add(item);
+            }
+        }
+
+        return playerItems;
+    }
+    private List<ItemStack> getPlayerInventory(Player player) {
+        // Convert player's inventory items from array to list
+        ItemStack[] inventoryItems = player.getInventory().getContents();
+        List<ItemStack> playerItems = new ArrayList<>();
+
+        // Convert the array to a list, ignoring null items
+        for (ItemStack item : inventoryItems) {
+            if (item != null) {
+                playerItems.add(item);
+            }
+        }
+
+        return playerItems;
+    }
 
     // Get the UUID of the other player (assuming there are only two players)
     public UUID getOtherPlayerId(UUID playerId) {
@@ -464,7 +511,6 @@ public final class Blurbattle extends JavaPlugin implements Listener {
             }
 
             if (opponentId != null) {
-                getLogger().info("e"); // For debugging
 
                 Player opponent = Bukkit.getPlayer(opponentId);
 
