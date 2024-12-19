@@ -106,6 +106,8 @@ public class pvpmap {
             for (ItemStack item : playerItems) {
                 opponent.getInventory().addItem(item);
             }
+            Blurbattle.getInstance().removeItemByName(opponent, ChatColor.GREEN + "Start Battle");
+            Blurbattle.getInstance().removeItemByName(opponent, ChatColor.RED + "Cancel Bet");
         }
 
         // Check if opponent betted items exist, if so, give them to the player
@@ -113,6 +115,8 @@ public class pvpmap {
             for (ItemStack item : opponentItems) {
                 opponent.getInventory().addItem(item);
             }
+            Blurbattle.getInstance().removeItemByName(opponent, ChatColor.GREEN + "Start Battle");
+            Blurbattle.getInstance().removeItemByName(opponent, ChatColor.RED + "Cancel Bet");
         }
 
         // Clear related data

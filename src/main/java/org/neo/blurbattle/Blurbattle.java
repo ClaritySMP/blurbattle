@@ -395,7 +395,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
                 Player clickedPlayer = (Player) event.getWhoClicked();
                 UUID otherPlayerId = getOtherPlayerId(clickedPlayer.getUniqueId());
                 Player otherPlayer = Bukkit.getPlayer(otherPlayerId);
-
+                // todo return items here
                 if (otherPlayer != null) {
                     // Notify both players that the bet was canceled
                     otherPlayer.sendMessage(ChatColor.RED + clickedPlayer.getName() + " has canceled the bet.");
