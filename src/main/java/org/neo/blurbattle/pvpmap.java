@@ -73,7 +73,7 @@ public class pvpmap {
     public void handleLoss(Player player, Player opponent, UUID opponentId) {
 
         World world = worldManager.getMVWorld("world").getCBWorld();
-        Location opponentStoredLocation = Blurbattle.getInstance().originalLocations.getOrDefault(opponentId, null);
+        Location opponentStoredLocation = Blurbattle.getInstance().opoglocation.getOrDefault(opponentId, null);
 
         Blurbattle.getInstance().getLogger().info(opponentStoredLocation.getX() + " " + opponentStoredLocation.getY() + " " + opponentStoredLocation.getZ());
 

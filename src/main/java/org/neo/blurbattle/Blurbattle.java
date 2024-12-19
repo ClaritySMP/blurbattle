@@ -24,6 +24,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
 
     public final HashMap<UUID, UUID> battleRequests = new HashMap<>();
     public final HashMap<UUID, Location> originalLocations = new HashMap<>();
+    public final HashMap<UUID, Location> opoglocation = new HashMap<>(); //failsafe just becus
     public final HashMap<UUID, BettingInventory> bettingInventories = new HashMap<>();
     public final HashMap<UUID, Double> originalHealth = new HashMap<>();
     public final HashMap<UUID, Integer> originalHunger = new HashMap<>();
@@ -129,6 +130,8 @@ public final class Blurbattle extends JavaPlugin implements Listener {
                 battleplayers.put(opponentId, challengerId);
                 originalLocations.put(player.getUniqueId(), player.getLocation());
                 originalLocations.put(challengerId, challenger.getLocation());
+                opoglocation.put(player.getUniqueId(), player.getLocation());
+                opoglocation.put(challengerId, challenger.getLocation());
                 getLogger().info(originalLocations.toString());
                 openBettingMenu(challenger, player);
                 battleRequests.remove(challengerId);
@@ -423,7 +426,9 @@ public final class Blurbattle extends JavaPlugin implements Listener {
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
         UUID playerId = event.getPlayer().getUniqueId();
+        final UUID finalplayerId = playerId;
         UUID opponentId = battleplayers.get(playerId);
+
         battleRequests.remove(playerId);
         originalLocations.remove(playerId);
         Player player = event.getEntity();
@@ -437,11 +442,12 @@ public final class Blurbattle extends JavaPlugin implements Listener {
             event.getDrops().clear();
             Bukkit.getScheduler().runTask(Blurbattle.getInstance(), () -> {
                 World world = Bukkit.getWorld("world");
-                double x = 100;
-                double y = 64;
-                double z = 100;
-                float yaw = 0;
-                float pitch = 0;
+                Location opponentStoredLocation = Blurbattle.getInstance().opoglocation.getOrDefault(player.getUniqueId(), null);
+                double x = opponentStoredLocation.getX();
+                double y = opponentStoredLocation.getY();
+                double z = opponentStoredLocation.getZ();
+                float yaw = opponentStoredLocation.getYaw();
+                float pitch = opponentStoredLocation.getPitch();
 
                 Location respawnLocation = new Location(world, x, y, z, yaw, pitch);
                 player.spigot().respawn(); // Force the player to respawn

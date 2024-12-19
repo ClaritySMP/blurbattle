@@ -4,6 +4,7 @@
 7. use a infinite lobby system
 8. world reset
 9. resets reset hashmaps
+10. reset inventory
 
 config file:
 - world name
