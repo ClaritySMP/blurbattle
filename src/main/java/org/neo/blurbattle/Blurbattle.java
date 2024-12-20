@@ -255,6 +255,11 @@ public final class Blurbattle extends JavaPlugin implements Listener {
     public void onPlayerQuit(PlayerQuitEvent event) {
         UUID playerId = event.getPlayer().getUniqueId();
         battleRequests.remove(playerId);
+        UUID opponentId = battleplayers.get(playerId);
+
+        battleRequests.remove(playerId);
+        originalLocations.remove(playerId);
+        Player player = event.getPlayer();
 
         originalLocations.remove(playerId);
 
@@ -317,6 +322,33 @@ public final class Blurbattle extends JavaPlugin implements Listener {
             readyPlayers.remove(playerId);
             battleplayers.remove(playerId);
             battleplayers.remove(otherPlayerId);
+        }
+        if (player.getWorld().getName().equals("blurbattle")) {
+            for (UUID uuid : battleplayers.keySet()) {
+                if (battleplayers.get(uuid).equals(player.getUniqueId()) ||
+                        battleplayers.containsKey(player.getUniqueId()) && battleplayers.get(player.getUniqueId()).equals(uuid)) {
+                    opponentId = uuid;
+                    break;
+                }
+            }
+            Location opponentStoredLocation = Blurbattle.getInstance().opoglocation.getOrDefault(player.getUniqueId(), null);
+            double x = opponentStoredLocation.getX();
+            double y = opponentStoredLocation.getY();
+            double z = opponentStoredLocation.getZ();
+            float yaw = opponentStoredLocation.getYaw();
+            float pitch = opponentStoredLocation.getPitch();
+            World world = Bukkit.getWorld("world");
+
+            Location respawnLocation = new Location(world, x, y, z, yaw, pitch);
+            player.spigot().respawn(); // Force the player to respawn
+            player.teleport(respawnLocation); // Teleport to the desired location
+            if (opponentId != null) {
+
+                Player opponent = Bukkit.getPlayer(opponentId);
+
+                // Handle the loss
+                pvpMap.handleLoss(player, opponent, opponentId);
+            }
         }
     }
     private void removeItemFromItemStack(ItemStack itemStack, String itemName) {
@@ -394,7 +426,6 @@ public final class Blurbattle extends JavaPlugin implements Listener {
                 Player clickedPlayer = (Player) event.getWhoClicked();
                 UUID otherPlayerId = getOtherPlayerId(clickedPlayer.getUniqueId());
                 Player otherPlayer = Bukkit.getPlayer(otherPlayerId);
-                // todo return items here
                 if (otherPlayer != null) {
                     // Notify both players that the bet was canceled
                     otherPlayer.sendMessage(ChatColor.RED + clickedPlayer.getName() + " has canceled the bet.");

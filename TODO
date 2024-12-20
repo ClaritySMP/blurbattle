@@ -6,6 +6,7 @@
 9. resets reset hashmaps
 10. reset inventory
 11. not allow to send requests to player who sent one
+12. player leave, player die
 config file:
 - world name
 - coords for player 1
