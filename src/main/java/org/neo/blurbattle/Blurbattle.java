@@ -251,7 +251,6 @@ public final class Blurbattle extends JavaPlugin implements Listener {
             }
         }
     }
-    // todo, add inventory failsafe
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         UUID playerId = event.getPlayer().getUniqueId();
@@ -401,9 +400,13 @@ public final class Blurbattle extends JavaPlugin implements Listener {
                     otherPlayer.sendMessage(ChatColor.RED + clickedPlayer.getName() + " has canceled the bet.");
                     clickedPlayer.sendMessage(ChatColor.RED + "You have canceled the bet.");
 
+
                     // Close both inventories
                     clickedPlayer.closeInventory();
                     otherPlayer.closeInventory();
+
+                    returnItemsToPlayer(clickedPlayer, otherPlayerId);
+                    returnItemsToPlayer(otherPlayer, clickedPlayer.getUniqueId());
 
                     // Remove betting-related data to ensure the bet is fully canceled
                     bettingInventories.remove(clickedPlayer.getUniqueId());
@@ -423,6 +426,28 @@ public final class Blurbattle extends JavaPlugin implements Listener {
 
     }
 
+    private void returnItemsToPlayer(Player player, UUID otherPlayerId) {
+        // Only return items if not already done
+        if (!bettingInventories.containsKey(player.getUniqueId())) {
+            return;  // No betting inventory, nothing to return
+        }
+
+        BettingInventory bettingInventory = bettingInventories.get(player.getUniqueId());
+
+        // Return items to the quitting player
+        for (int i = 0; i < bettingInventory.getInventory().getSize(); i++) {
+            ItemStack itemStack = bettingInventory.getInventory().getItem(i);
+
+            if (itemStack != null && itemStack.getType() != Material.AIR) {
+                // Check for specific items and remove them from the ItemStack
+                removeItemFromItemStack(itemStack, ChatColor.GREEN + "Start Battle");
+                removeItemFromItemStack(itemStack, ChatColor.RED + "Cancel Bet");
+
+                // Add the modified ItemStack (if any) to the player's inventory
+                player.getInventory().addItem(itemStack);
+            }
+        }
+    }
     private List<ItemStack> getPlayerBet(Player player) {
         // Convert player's inventory items from array to list
         BettingInventory bettingInventory = bettingInventories.get(player.getUniqueId());

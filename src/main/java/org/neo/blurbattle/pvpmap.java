@@ -15,7 +15,6 @@ import java.util.List;
 public class pvpmap {
     Core mvcore = (Core) Bukkit.getServer().getPluginManager().getPlugin("Multiverse-Core");
     MVWorldManager worldManager = mvcore.getMVWorldManager();
-    // todo tp with direction and replace message with title
     public void startBattle(Player player, UUID opponentUUID) {
         Player opponent = Bukkit.getPlayer(opponentUUID);
 
@@ -34,7 +33,6 @@ public class pvpmap {
             player.teleport(playerLocation);
             opponent.teleport(opponentLocation);
 
-            // TODO: Fully heal and restore players' hunger after teleport
             Blurbattle.getInstance().originalHealth.put(player.getUniqueId(), player.getHealth());
             Blurbattle.getInstance().originalHunger.put(player.getUniqueId(), player.getFoodLevel());
 
@@ -87,8 +85,8 @@ public class pvpmap {
         opponent.teleport(opponentLocation);
 
         if (Blurbattle.getInstance().originalHealth.containsKey(opponent.getUniqueId()) && Blurbattle.getInstance().originalHunger.containsKey(opponent.getUniqueId())) {
-            opponent.setHealth(Blurbattle.getInstance().originalHealth.get(player.getUniqueId()));
-            opponent.setFoodLevel(Blurbattle.getInstance().originalHunger.get(player.getUniqueId()));
+            opponent.setHealth(Blurbattle.getInstance().originalHealth.get(opponentId));
+            opponent.setFoodLevel(Blurbattle.getInstance().originalHunger.get(opponentId));
         }
 
         // Announce the winner
