@@ -1,5 +1,6 @@
 package org.neo.blurbattle;
 
+import com.onarandombox.MultiverseCore.MVWorld;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -11,10 +12,16 @@ import java.util.UUID;
 import com.onarandombox.MultiverseCore.api.MVWorldManager;
 import org.bukkit.inventory.ItemStack;
 import java.util.List;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+
 
 public class pvpmap {
     Core mvcore = (Core) Bukkit.getServer().getPluginManager().getPlugin("Multiverse-Core");
     MVWorldManager worldManager = mvcore.getMVWorldManager();
+    String worldName;
     public void startBattle(Player player, UUID opponentUUID) {
         Player opponent = Bukkit.getPlayer(opponentUUID);
 
@@ -128,8 +135,72 @@ public class pvpmap {
         Blurbattle.getInstance().originalHunger.remove(opponentId);
         Blurbattle.getInstance().bettingInventories.remove(player.getUniqueId());
         Blurbattle.getInstance().bettingInventories.remove(opponentId);
-        Blurbattle.getInstance().battleplayers.remove(player.getUniqueId());
-        Blurbattle.getInstance().battleplayers.remove(opponentId);
+        // Blurbattle.getInstance().battleplayers.remove(player.getUniqueId());
+        // Blurbattle.getInstance().battleplayers.remove(opponentId);
+        // not yet
     }
 
+    public void resetArenaWorld() {
+        try {
+            // Unload the world first to avoid issues while copying
+            unloadWorld();
+            worldName = "blurbattle";  // Define the world name locally
+            File backupFolder = new File("path/to/backup");
+            // Delete current world and copy the backup over it
+            File worldFolder = new File(Blurbattle.getInstance().getServer().getWorldContainer(), worldName);
+            deleteFolder(worldFolder);
+
+            // Copy backup to the world folder
+            File backupWorldFolder = new File(backupFolder, worldName);
+            copyFolder(backupWorldFolder, worldFolder);
+
+            // Reload the world
+            loadWorld();
+        } catch (IOException e) {
+            Blurbattle.getInstance().getLogger().severe("Failed to reset the world: " + e.getMessage());
+        }
+    }
+
+    // Unload the world from Multiverse-Core
+    private void unloadWorld() {
+
+        worldManager.unloadWorld(worldName);
+    }
+
+    // Load the world again after reset
+    private void loadWorld() {
+
+        worldManager.loadWorld(worldName);
+    }
+
+    // Delete a folder and its contents recursively
+    private void deleteFolder(File folder) {
+        File[] files = folder.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    deleteFolder(file);
+                } else {
+                    file.delete();
+                }
+            }
+        }
+        folder.delete();
+    }
+
+    // Copy a folder and its contents recursively
+    private void copyFolder(File source, File destination) throws IOException {
+        if (!destination.exists()) {
+            destination.mkdirs();
+        }
+
+        for (File file : source.listFiles()) {
+            File destFile = new File(destination, file.getName());
+            if (file.isDirectory()) {
+                copyFolder(file, destFile);
+            } else {
+                Files.copy(file.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
+        }
+    }
 }

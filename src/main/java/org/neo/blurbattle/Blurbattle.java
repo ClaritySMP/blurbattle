@@ -203,7 +203,14 @@ public final class Blurbattle extends JavaPlugin implements Listener {
                     player.sendMessage(ChatColor.RED + "That player already sent a Request to you");
                     return true;
                 }
-
+                if(battleplayers.containsKey(player)) {
+                    player.sendMessage(ChatColor.RED + "You can't send another request while in battle");
+                    return true;
+                }
+                if(battleplayers.size() < 0) {
+                    player.sendMessage(ChatColor.GOLD + "There is a battle going on, please wait a little longer and try again.");
+                    return true;
+                }
 
                 battleRequests.put(player.getUniqueId(), target.getUniqueId());
                 battleRequests.put(target.getUniqueId(), player.getUniqueId());

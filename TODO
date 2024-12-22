@@ -4,11 +4,8 @@ this is the to-do file for the blurbattle plugin, it contains a list of stuff to
 ================Blurbattle================
 
 1. read all todos in code [done]
-5. remove debug and replace with debug framework
 6. config file
-7. use a infinite lobby system
 8. world reset
-12. check if players are battling
 config file:
 - world name
 - coords for player 1
@@ -16,3 +13,4 @@ config file:
 - debug
 - other pvp shit vvvv
 - messages
+- backup folder name
