@@ -32,6 +32,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
     public final HashMap<UUID, Boolean> readyPlayers = new HashMap<>();
     public final HashMap<UUID, UUID> battleplayers = new HashMap<>();
     public final HashMap<Player, List<ItemStack>> playerBets = new HashMap<>();
+    private Map<UUID, List<ItemStack>> playerInventories = new HashMap<>();
     private boolean isBattleReady = false;
     public boolean isReopeningInventory = false;
     private static Blurbattle instance;
@@ -198,9 +199,14 @@ public final class Blurbattle extends JavaPlugin implements Listener {
                     player.sendMessage(ChatColor.RED + "You can't send a request to yourself");
                     return true;
                 }
+                if(target.getUniqueId() == battleRequests.get(player.getUniqueId())) {
+                    player.sendMessage(ChatColor.RED + "That player already sent a Request to you");
+                    return true;
+                }
 
 
                 battleRequests.put(player.getUniqueId(), target.getUniqueId());
+                battleRequests.put(target.getUniqueId(), player.getUniqueId());
                 target.sendMessage(ChatColor.YELLOW + player.getName() + " has challenged you to a battle! Type /blurbattle confirm to accept or /blurbattle cancel to deny.");
                 player.sendMessage(ChatColor.GREEN + "Battle request sent to " + target.getName() + ".");
 
@@ -210,6 +216,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
                     public void run() {
                         if (battleRequests.containsKey(player.getUniqueId())) {
                             battleRequests.remove(player.getUniqueId());
+                            battleRequests.remove(target.getUniqueId());
                             player.sendMessage(ChatColor.RED + "Your battle request to " + target.getName() + " has expired.");
                         }
                     }
@@ -251,9 +258,49 @@ public final class Blurbattle extends JavaPlugin implements Listener {
             }
         }
     }
+    public void storePlayerInventory(Player player) {
+        UUID playerId = player.getUniqueId();
+        List<ItemStack> inventoryItems = new ArrayList<>();
+
+        // Iterate through the player's inventory
+        for (ItemStack itemStack : player.getInventory().getContents()) {
+            if (itemStack != null && itemStack.getType() != Material.AIR) {
+                // Clone the item to prevent modification of the original stack later
+                ItemStack clonedItem = itemStack.clone();
+                inventoryItems.add(clonedItem);
+            }
+        }
+
+        // Store the list of items in the map
+        playerInventories.put(playerId, inventoryItems);
+        player.sendMessage(ChatColor.GREEN + "Your inventory has been stored.");
+    }
+
+    // Method to retrieve and restore a player's inventory
+    public void restorePlayerInventory(Player player) {
+        UUID playerId = player.getUniqueId();
+
+        // Check if the player's inventory is stored
+        if (playerInventories.containsKey(playerId)) {
+            List<ItemStack> storedItems = playerInventories.get(playerId);
+
+            // Clear current inventory before restoring the stored items
+            player.getInventory().clear();
+
+            // Add the stored items back to the player's inventory
+            for (ItemStack itemStack : storedItems) {
+                player.getInventory().addItem(itemStack);
+            }
+
+            player.sendMessage(ChatColor.GREEN + "Your inventory has been restored.");
+        } else {
+            player.sendMessage(ChatColor.RED + "No stored inventory found.");
+        }
+    }
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         UUID playerId = event.getPlayer().getUniqueId();
+        battleRequests.remove(battleRequests.get(playerId));
         battleRequests.remove(playerId);
         UUID opponentId = battleplayers.get(playerId);
 
@@ -342,11 +389,13 @@ public final class Blurbattle extends JavaPlugin implements Listener {
             Location respawnLocation = new Location(world, x, y, z, yaw, pitch);
             player.spigot().respawn(); // Force the player to respawn
             player.teleport(respawnLocation); // Teleport to the desired location
+            restorePlayerInventory(player);
             if (opponentId != null) {
 
                 Player opponent = Bukkit.getPlayer(opponentId);
 
                 // Handle the loss
+
                 pvpMap.handleLoss(player, opponent, opponentId);
             }
         }
@@ -415,6 +464,8 @@ public final class Blurbattle extends JavaPlugin implements Listener {
                         playerBets.put(opponent, opponentItems);
 
                         // Call the method to start the battle
+                        storePlayerInventory(player);
+                        storePlayerInventory(opponent);
                         startBattle(player, opponentUUID);
                     }
                 } else {
@@ -531,7 +582,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
         UUID playerId = event.getPlayer().getUniqueId();
         final UUID finalplayerId = playerId;
         UUID opponentId = battleplayers.get(playerId);
-
+        battleRequests.remove(battleRequests.get(playerId));
         battleRequests.remove(playerId);
         originalLocations.remove(playerId);
         Player player = event.getEntity();
@@ -555,6 +606,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
                 Location respawnLocation = new Location(world, x, y, z, yaw, pitch);
                 player.spigot().respawn(); // Force the player to respawn
                 player.teleport(respawnLocation); // Teleport to the desired location
+                restorePlayerInventory(player);
             });
 
             // Find the opponent

@@ -1,15 +1,18 @@
-1. read all todos in code .
+==========================================
+this is the to-do file for the blurbattle plugin, it contains a list of stuff to complete
+
+================Blurbattle================
+
+1. read all todos in code [done]
 5. remove debug and replace with debug framework
 6. config file
 7. use a infinite lobby system
 8. world reset
-9. resets reset hashmaps
-10. reset inventory
-11. not allow to send requests to player who sent one
-12. player leave, player die
+12. check if players are battling
 config file:
 - world name
 - coords for player 1
 - coords for player 2
 - debug
 - other pvp shit vvvv
+- messages
