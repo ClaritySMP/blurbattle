@@ -138,14 +138,15 @@ public class pvpmap {
         // Blurbattle.getInstance().battleplayers.remove(player.getUniqueId());
         // Blurbattle.getInstance().battleplayers.remove(opponentId);
         // not yet
+        resetArenaWorld(player, opponent);
     }
 
-    public void resetArenaWorld() {
+    public void resetArenaWorld(Player player, Player opponent) {
         try {
             // Unload the world first to avoid issues while copying
             unloadWorld();
             worldName = "blurbattle";  // Define the world name locally
-            File backupFolder = new File("path/to/backup");
+            File backupFolder = new File(Blurbattle.getInstance().dataFolder, "backups");
             // Delete current world and copy the backup over it
             File worldFolder = new File(Blurbattle.getInstance().getServer().getWorldContainer(), worldName);
             deleteFolder(worldFolder);
@@ -156,6 +157,8 @@ public class pvpmap {
 
             // Reload the world
             loadWorld();
+            Blurbattle.getInstance().battleplayers.remove(player.getUniqueId());
+            Blurbattle.getInstance().battleplayers.remove(opponent.getUniqueId());
         } catch (IOException e) {
             Blurbattle.getInstance().getLogger().severe("Failed to reset the world: " + e.getMessage());
         }
@@ -201,6 +204,15 @@ public class pvpmap {
             } else {
                 Files.copy(file.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
+        }
+    }
+    public void createWorldBackup() {
+        try {
+            File worldFolder = new File(Bukkit.getServer().getWorldContainer(), "blurbattle");
+            File backupFolder = new File(Blurbattle.getInstance().dataFolder, "backups");
+            copyFolder(worldFolder, backupFolder);
+        }  catch (IOException e) {
+            Blurbattle.getInstance().getLogger().severe("Failed to create world backup: " + e.getMessage());
         }
     }
 }

@@ -14,7 +14,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.event.inventory.InventoryCloseEvent;
-
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -37,8 +37,10 @@ public final class Blurbattle extends JavaPlugin implements Listener {
     public boolean isReopeningInventory = false;
     private static Blurbattle instance;
     private pvpmap pvpMap;
-
-
+    public File dataFolder = getDataFolder();
+    public File backupFolder = new File(dataFolder, "backups");;
+    private String worldName = "blurbattle";
+    // todo change
 
     public HashMap<UUID, BettingInventory> getBettingInventories() {
         return bettingInventories;
@@ -82,9 +84,36 @@ public final class Blurbattle extends JavaPlugin implements Listener {
 
         getLogger().info(ChatColor.GREEN + eyeAscii);
         getLogger().info(ChatColor.GREEN + "Blurbattle plugin has been enabled!");
-
+        getLogger().info(dataFolder.toString());
         this.pvpMap = new pvpmap();
         instance = this;
+
+        if (!dataFolder.exists()) {
+            dataFolder.mkdir();
+        }
+
+
+        // Check if the backups directory exists
+        if (!backupFolder.exists()) {
+            if (backupFolder.mkdir()) {
+                getLogger().info("Created backups directory.");
+            } else {
+                getLogger().severe("Failed to create backups directory.");
+            }
+        }
+        File backupWorldFolder = new File(backupFolder, worldName);
+        if (!backupWorldFolder.exists()) {
+            getLogger().info("Creating initial backup for world: " + worldName);
+            getServer().getScheduler().runTaskLater(this, new Runnable() {
+                @Override
+                public void run() {
+                    pvpMap.createWorldBackup();
+                }
+            }, 1);
+
+        } else {
+            getLogger().info("Backup for world '" + worldName + "' already exists.");
+        }
 
     }
 
