@@ -21,7 +21,7 @@ import java.nio.file.StandardCopyOption;
 public class pvpmap {
     Core mvcore = (Core) Bukkit.getServer().getPluginManager().getPlugin("Multiverse-Core");
     MVWorldManager worldManager = mvcore.getMVWorldManager();
-    String worldName;
+    String worldName = "blurbattle";;
     public void startBattle(Player player, UUID opponentUUID) {
         Player opponent = Bukkit.getPlayer(opponentUUID);
 
@@ -145,7 +145,7 @@ public class pvpmap {
         try {
             // Unload the world first to avoid issues while copying
             unloadWorld();
-            worldName = "blurbattle";  // Define the world name locally
+              // Define the world name locally
             File backupFolder = new File(Blurbattle.getInstance().dataFolder, "backups");
             // Delete current world and copy the backup over it
             File worldFolder = new File(Blurbattle.getInstance().getServer().getWorldContainer(), worldName);
@@ -208,7 +208,7 @@ public class pvpmap {
     }
     public void createWorldBackup() {
         try {
-            File worldFolder = new File(Bukkit.getServer().getWorldContainer(), "blurbattle");
+            File worldFolder = new File(Bukkit.getServer().getWorldContainer(), worldName);
             File backupFolder = new File(Blurbattle.getInstance().dataFolder, "backups");
             copyFolder(worldFolder, backupFolder);
         }  catch (IOException e) {

@@ -101,8 +101,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
                 getLogger().severe("Failed to create backups directory.");
             }
         }
-        File backupWorldFolder = new File(backupFolder, worldName);
-        if (!backupWorldFolder.exists()) {
+        if (!backupFolder.exists()) {
             getLogger().info("Creating initial backup for world: " + worldName);
             getServer().getScheduler().runTaskLater(this, new Runnable() {
                 @Override
@@ -232,11 +231,11 @@ public final class Blurbattle extends JavaPlugin implements Listener {
                     player.sendMessage(ChatColor.RED + "That player already sent a Request to you");
                     return true;
                 }
-                if(battleplayers.containsKey(player)) {
+                if(battleplayers.containsKey(player.getUniqueId())) {
                     player.sendMessage(ChatColor.RED + "You can't send another request while in battle");
                     return true;
                 }
-                if(battleplayers.size() < 0) {
+                if(!battleplayers.isEmpty()) {
                     player.sendMessage(ChatColor.GOLD + "There is a battle going on, please wait a little longer and try again.");
                     return true;
                 }
@@ -245,6 +244,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
                 battleRequests.put(target.getUniqueId(), player.getUniqueId());
                 target.sendMessage(ChatColor.YELLOW + player.getName() + " has challenged you to a battle! Type /blurbattle confirm to accept or /blurbattle cancel to deny.");
                 player.sendMessage(ChatColor.GREEN + "Battle request sent to " + target.getName() + ".");
+                getLogger().info(battleplayers.toString());
 
                 // Timeout for the request
                 new BukkitRunnable() {
