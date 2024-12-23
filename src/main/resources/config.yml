@@ -48,16 +48,11 @@ player2-spawn-coords:
   y: 65
   z: 250
 
-# PvP settings
-pvp:
-  health-reset: true         # Reset health at the start of the match
-  clear-inventory: true      # Clear inventory before the match
-  give-default-gear: true    # Provide default gear to players
-
 # Title message settings
 battle-start-message:
-  title: "Battle Begins!"
-  subtitle: "Fight for glory!"
+  title: "Let the battle BEGIN!"
+  subtitle: "May the best player win!"
+  sound: "ITEM_GOAT_HORN_SOUND_0" # to change sound, you can find a list over at https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Sound.html
 
 
 # Backup folder settings

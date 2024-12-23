@@ -21,20 +21,34 @@ import java.nio.file.StandardCopyOption;
 public class pvpmap {
     Core mvcore = (Core) Bukkit.getServer().getPluginManager().getPlugin("Multiverse-Core");
     MVWorldManager worldManager = mvcore.getMVWorldManager();
-    String worldName = "blurbattle";
+    String worldName = Blurbattle.getInstance().getConfig().getString("pvp-arena-world-name");
+    String mainworldName = Blurbattle.getInstance().getConfig().getString("main-world-name");
+    String titleText = Blurbattle.getInstance().getConfig().getString("battle-start-message.title");
+    String subtitleText = Blurbattle.getInstance().getConfig().getString("battle-start-message.subtitle");
+    String soundName = Blurbattle.getInstance().getConfig().getString("battle-start-message.sound");
+
+
     public void startBattle(Player player, UUID opponentUUID) {
         Player opponent = Bukkit.getPlayer(opponentUUID);
 
 
         if (opponent != null && opponent.isOnline()) {
 
-            World world = worldManager.getMVWorld("blurbattle").getCBWorld();
+            World world = worldManager.getMVWorld(worldName).getCBWorld();
 
 
 
             // Define player locations within the "blurbattle" world
-            Location playerLocation = new Location(world, 27.5, 0, 0.5, 90, 0);
-            Location opponentLocation = new Location(world, -27.5, 0, 0.5, 270, 0);
+            double player1X = Blurbattle.getInstance().getConfig().getDouble("player1-spawn-coords.x");
+            double player1Y = Blurbattle.getInstance().getConfig().getDouble("player1-spawn-coords.y");
+            double player1Z = Blurbattle.getInstance().getConfig().getDouble("player1-spawn-coords.z");
+
+            double player2X = Blurbattle.getInstance().getConfig().getDouble("player2-spawn-coords.x");
+            double player2Y = Blurbattle.getInstance().getConfig().getDouble("player2-spawn-coords.y");
+            double player2Z = Blurbattle.getInstance().getConfig().getDouble("player2-spawn-coords.z");
+
+            Location playerLocation = new Location(world, player1X, player1Y, player1Z);
+            Location opponentLocation = new Location(world, player2X, player2Y, player2Z);
 
             // Teleport players directly using the Multiverse-Core API
             player.teleport(playerLocation);
@@ -59,13 +73,21 @@ public class pvpmap {
             Blurbattle.getInstance().bettingInventories.remove(opponentUUID);
             player.closeInventory();
             opponent.closeInventory();
-            player.playSound(player.getLocation(), Sound.ITEM_GOAT_HORN_SOUND_0, 1.0f, 1.0f);
-            opponent.playSound(player.getLocation(), Sound.ITEM_GOAT_HORN_SOUND_0, 1.0f, 1.0f);
-            player.sendTitle(ChatColor.RED + "Let the battle BEGIN!",
-                    ChatColor.GOLD + "May the best player win!",
+            try {
+                Sound sound = Sound.valueOf(soundName);
+
+                // Play the sound for both players
+                player.playSound(player.getLocation(), sound, 1.0f, 1.0f);
+                opponent.playSound(opponent.getLocation(), sound, 1.0f, 1.0f);
+            } catch (IllegalArgumentException e) {
+                // Handle the case where the sound is not valid
+                Blurbattle.getInstance().getLogger().warning("The sound '" + soundName + "' is not a valid sound.");
+            }
+            player.sendTitle(ChatColor.RED + titleText,
+                    ChatColor.GOLD + subtitleText,
                     10, 60, 10); // Customize fade times (ticks)
-            opponent.sendTitle(ChatColor.BLUE + "Let the battle BEGIN!",
-                    ChatColor.AQUA + "May the best player win!",
+            opponent.sendTitle(ChatColor.BLUE + titleText,
+                    ChatColor.AQUA + subtitleText,
                     10, 60, 10);
         } else {
             player.sendMessage(ChatColor.RED + "The opponent is no longer online.");
@@ -79,16 +101,14 @@ public class pvpmap {
 
     public void handleLoss(Player player, Player opponent, UUID opponentId) {
 
-        World world = worldManager.getMVWorld("world").getCBWorld();
+        World world = worldManager.getMVWorld(mainworldName).getCBWorld();
         Location opponentStoredLocation = Blurbattle.getInstance().opoglocation.getOrDefault(opponentId, null);
 
 
         // Define player locations within the "blurbattle" world
-        Location playerLocation = new Location(world, -27.5, 0, 0.5, 270, 0);
         Location opponentLocation = new Location(world, opponentStoredLocation.getX(), opponentStoredLocation.getY(), opponentStoredLocation.getZ(), opponentStoredLocation.getYaw(), opponentStoredLocation.getPitch());
 
         // Teleport players directly using the Multiverse-Core API
-        player.teleport(playerLocation);
         opponent.teleport(opponentLocation);
 
         if (Blurbattle.getInstance().originalHealth.containsKey(opponent.getUniqueId()) && Blurbattle.getInstance().originalHunger.containsKey(opponent.getUniqueId())) {
@@ -184,7 +204,7 @@ public class pvpmap {
     }
 
     // Delete a folder and its contents recursively
-    private void deleteFolder(File folder) {
+    public void deleteFolder(File folder) {
         File[] files = folder.listFiles();
         if (files != null) {
             for (File file : files) {

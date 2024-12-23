@@ -40,6 +40,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
     public File dataFolder = getDataFolder();
     public File backupFolder = new File(dataFolder, "backups");;
     private String worldName = "blurbattle";
+    private String mainworldName = getConfig().getString("main-world-name");
 
     public HashMap<UUID, BettingInventory> getBettingInventories() {
         return bettingInventories;
@@ -56,6 +57,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
+        instance = this;
         getServer().getPluginManager().registerEvents(this, this);
 
         getCommand("blurbattle").setTabCompleter(new tabcomplete());
@@ -85,7 +87,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
         getLogger().info(ChatColor.GREEN + "Blurbattle plugin has been enabled!");
         getLogger().info(dataFolder.toString());
         this.pvpMap = new pvpmap();
-        instance = this;
+
 
         if (!dataFolder.exists()) {
             dataFolder.mkdir();
@@ -108,6 +110,15 @@ public final class Blurbattle extends JavaPlugin implements Listener {
             }
         } else {
             getLogger().info("backup folder already exists");
+        }
+
+        File worldFolder = new File(Bukkit.getServer().getWorldContainer(), worldName);
+        if(!worldFolder.exists()) {
+            getLogger().info("warning: blurbattle pvp world does not exist, cannot continue.");
+            getLogger().info("to create a new world, type  '/mv create [WorldName] normal' in the console to create the arena world");
+            File backupFolder = new File(Blurbattle.getInstance().dataFolder, "backups");
+            pvpMap.deleteFolder(backupFolder);
+            disablePlugin();
         }
 
 
@@ -407,7 +418,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
             battleplayers.remove(playerId);
             battleplayers.remove(otherPlayerId);
         }
-        if (player.getWorld().getName().equals("blurbattle")) {
+        if (player.getWorld().getName().equals(worldName)) {
             for (UUID uuid : battleplayers.keySet()) {
                 if (battleplayers.get(uuid).equals(player.getUniqueId()) ||
                         battleplayers.containsKey(player.getUniqueId()) && battleplayers.get(player.getUniqueId()).equals(uuid)) {
@@ -421,7 +432,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
             double z = opponentStoredLocation.getZ();
             float yaw = opponentStoredLocation.getYaw();
             float pitch = opponentStoredLocation.getPitch();
-            World world = Bukkit.getWorld("world");
+            World world = Bukkit.getWorld(mainworldName);
 
             Location respawnLocation = new Location(world, x, y, z, yaw, pitch);
             player.spigot().respawn(); // Force the player to respawn
@@ -625,14 +636,14 @@ public final class Blurbattle extends JavaPlugin implements Listener {
         Player player = event.getEntity();
 
         // Check if the death occurred in the "blurbattle" world
-        if (player.getWorld().getName().equals("blurbattle")) {
+        if (player.getWorld().getName().equals(worldName)) {
 
             // Prevent the default death screen
             event.setDeathMessage(null);
             event.setDroppedExp(0);
             event.getDrops().clear();
             Bukkit.getScheduler().runTask(Blurbattle.getInstance(), () -> {
-                World world = Bukkit.getWorld("world");
+                World world = Bukkit.getWorld(mainworldName);
                 Location opponentStoredLocation = Blurbattle.getInstance().opoglocation.getOrDefault(player.getUniqueId(), null);
                 double x = opponentStoredLocation.getX();
                 double y = opponentStoredLocation.getY();
