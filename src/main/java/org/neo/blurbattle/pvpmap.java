@@ -21,7 +21,7 @@ import java.nio.file.StandardCopyOption;
 public class pvpmap {
     Core mvcore = (Core) Bukkit.getServer().getPluginManager().getPlugin("Multiverse-Core");
     MVWorldManager worldManager = mvcore.getMVWorldManager();
-    String worldName = "blurbattle";;
+    String worldName = "blurbattle";
     public void startBattle(Player player, UUID opponentUUID) {
         Player opponent = Bukkit.getPlayer(opponentUUID);
 
@@ -61,8 +61,8 @@ public class pvpmap {
             opponent.closeInventory();
             player.playSound(player.getLocation(), Sound.ITEM_GOAT_HORN_SOUND_0, 1.0f, 1.0f);
             opponent.playSound(player.getLocation(), Sound.ITEM_GOAT_HORN_SOUND_0, 1.0f, 1.0f);
-            player.sendTitle(ChatColor.BLUE + "Let the battle BEGIN!",
-                    ChatColor.AQUA + "May the best player win!",
+            player.sendTitle(ChatColor.RED + "Let the battle BEGIN!",
+                    ChatColor.GOLD + "May the best player win!",
                     10, 60, 10); // Customize fade times (ticks)
             opponent.sendTitle(ChatColor.BLUE + "Let the battle BEGIN!",
                     ChatColor.AQUA + "May the best player win!",
@@ -216,8 +216,16 @@ public class pvpmap {
     public void createWorldBackup() {
         try {
             File worldFolder = new File(Bukkit.getServer().getWorldContainer(), worldName);
-            File backupFolder = new File(Blurbattle.getInstance().dataFolder, "backups");
-            copyFolder(worldFolder, backupFolder);
+            if(worldFolder.exists()) {
+                File backupFolder = new File(Blurbattle.getInstance().dataFolder, "backups");
+                copyFolder(worldFolder, backupFolder);
+            } else {
+                Blurbattle.getInstance().getLogger().info("warning: blurbattle pvp world does not exist, cannot continue.");
+                Blurbattle.getInstance().getLogger().info("to create a new world, type  '/mv create [WorldName] normal' in the console to create the arena world");
+                File backupFolder = new File(Blurbattle.getInstance().dataFolder, "backups");
+                deleteFolder(backupFolder);
+                Blurbattle.getInstance().disablePlugin();
+            }
         }  catch (IOException e) {
             Blurbattle.getInstance().getLogger().severe("Failed to create world backup: " + e.getMessage());
         }

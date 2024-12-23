@@ -59,7 +59,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this, this);
 
         getCommand("blurbattle").setTabCompleter(new tabcomplete());
-
+        saveDefaultConfig();
         String eyeAscii =
                 """                                
                                  
@@ -118,6 +118,10 @@ public final class Blurbattle extends JavaPlugin implements Listener {
         getLogger().info(ChatColor.GREEN + "Blurbattle is now shutting down");
     }
 
+    public void disablePlugin() {
+        Bukkit.getLogger().warning("Disabling Blurbattle plugin...");
+        Bukkit.getPluginManager().disablePlugin(this);
+    }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {

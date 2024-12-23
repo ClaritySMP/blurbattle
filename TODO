@@ -5,12 +5,10 @@ this is the to-do file for the blurbattle plugin, it contains a list of stuff to
 
 1. read all todos in code [done]
 6. config file
-8. world reset
 config file:
 - world name
 - coords for player 1
 - coords for player 2
-- debug
 - other pvp shit vvvv
 - messages
 - backup folder name

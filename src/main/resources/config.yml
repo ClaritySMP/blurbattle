@@ -1,1 +1,68 @@
-# skibidi gyattd
+#                                 ...',;;:cccccccc:;,..
+#                            ..,;:cccc::::ccccclloooolc;'.
+#                         .',;:::;;;;:loodxk0kkxxkxxdocccc;;'..
+#                       .,;;;,,;:coxldKNWWWMMMMWNNWWNNKkdolcccc:,.
+#                    .',;;,',;lxo:...dXWMMMMMMMMNkloOXNNNX0koc:coo;.
+#                 ..,;:;,,,:ldl'   .kWMMMWXXNWMMMMXd..':d0XWWN0d:;lkd,
+#               ..,;;,,'':loc.     lKMMMNl. .c0KNWNK:  ..';lx00X0l,cxo,.
+#             ..''....'cooc.       c0NMMX;   .l0XWN0;       ,ddx00occl:.
+#           ..'..  .':odc.         .x0KKKkolcld000xc.       .cxxxkkdl:,..
+#         ..''..   ;dxolc;'         .lxx000kkxx00kc.      .;looolllol:'..
+#        ..'..    .':lloolc:,..       'lxkkkkk0kd,   ..':clc:::;,,;:;,'..
+#        ......   ....',;;;:ccc::;;,''',:loddol:,,;:clllolc:;;,'........
+#            .     ....'''',,,;;:cccccclllloooollllccc:c:::;,'..
+#                    .......'',,,,,,,,;;::::ccccc::::;;;,,''...
+#                      ...............''',,,;;;,,''''''......
+#                           ............................
+#======================================================================================#
+
+
+
+
+
+
+# ____  _            ____        _   _   _
+#| __ )| |_   _ _ __| __ )  __ _| |_| |_| | ___
+#|  _ \| | | | | '__|  _ \ / _` | __| __| |/ _ \
+#| |_) | | |_| | |  | |_) | (_| | |_| |_| |  __/
+#|____/|_|\__,_|_|  |____/ \__,_|\__|\__|_|\___|
+
+# config.yml for blurbattle plugin
+# Adjust the settings below to customize the behavior of the plugin.
+
+
+main-world-name: "world"  # Name of the main world
+pvp-arena-world-name: "blurbattle"  # Name of the PvP arena world
+
+# =================== #
+
+
+# Coordinates for Player 1 and Player 2 spawns
+player1-spawn-coords:
+  x: 100
+  y: 65
+  z: 200
+
+player2-spawn-coords:
+  x: 150
+  y: 65
+  z: 250
+
+# PvP settings
+pvp:
+  health-reset: true         # Reset health at the start of the match
+  clear-inventory: true      # Clear inventory before the match
+  give-default-gear: true    # Provide default gear to players
+
+# Title message settings
+battle-start-message:
+  title: "Battle Begins!"
+  subtitle: "Fight for glory!"
+
+
+# Backup folder settings
+backup-folder-name: "arena_backups"  # Folder where arena backups are stored
+
+
+
+# anything else you want to customize? send a request in the github
