@@ -138,7 +138,15 @@ public class pvpmap {
         // Blurbattle.getInstance().battleplayers.remove(player.getUniqueId());
         // Blurbattle.getInstance().battleplayers.remove(opponentId);
         // not yet
-        resetArenaWorld(player, opponent);
+        Bukkit.getScheduler().runTaskLater(Blurbattle.getInstance(), () -> {
+            try {
+                resetArenaWorld(player, opponent);
+            } catch (Exception e) {
+                Blurbattle.getInstance().getLogger().severe("Failed to reset arena world: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }, 20L); // 20 ticks = 1 second
+
     }
 
     public void resetArenaWorld(Player player, Player opponent) {
@@ -152,8 +160,7 @@ public class pvpmap {
             deleteFolder(worldFolder);
 
             // Copy backup to the world folder
-            File backupWorldFolder = new File(backupFolder, worldName);
-            copyFolder(backupWorldFolder, worldFolder);
+            copyFolder(backupFolder, worldFolder);
 
             // Reload the world
             loadWorld();

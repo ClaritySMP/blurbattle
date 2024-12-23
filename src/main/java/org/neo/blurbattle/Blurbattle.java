@@ -40,7 +40,6 @@ public final class Blurbattle extends JavaPlugin implements Listener {
     public File dataFolder = getDataFolder();
     public File backupFolder = new File(dataFolder, "backups");;
     private String worldName = "blurbattle";
-    // todo change
 
     public HashMap<UUID, BettingInventory> getBettingInventories() {
         return bettingInventories;
@@ -97,22 +96,20 @@ public final class Blurbattle extends JavaPlugin implements Listener {
         if (!backupFolder.exists()) {
             if (backupFolder.mkdir()) {
                 getLogger().info("Created backups directory.");
+                getLogger().info("Creating initial backup for world: " + worldName);
+                getServer().getScheduler().runTaskLater(this, new Runnable() {
+                    @Override
+                    public void run() {
+                        pvpMap.createWorldBackup();
+                    }
+                }, 1);
             } else {
                 getLogger().severe("Failed to create backups directory.");
             }
-        }
-        if (!backupFolder.exists()) {
-            getLogger().info("Creating initial backup for world: " + worldName);
-            getServer().getScheduler().runTaskLater(this, new Runnable() {
-                @Override
-                public void run() {
-                    pvpMap.createWorldBackup();
-                }
-            }, 1);
-
         } else {
-            getLogger().info("Backup for world '" + worldName + "' already exists.");
+            getLogger().info("backup folder already exists");
         }
+
 
     }
 
@@ -232,7 +229,7 @@ public final class Blurbattle extends JavaPlugin implements Listener {
                     return true;
                 }
                 if(battleplayers.containsKey(player.getUniqueId())) {
-                    player.sendMessage(ChatColor.RED + "You can't send another request while in battle");
+                    player.sendMessage(ChatColor.RED + "You can't send another request while in battle or while the world is resetting");
                     return true;
                 }
                 if(!battleplayers.isEmpty()) {
