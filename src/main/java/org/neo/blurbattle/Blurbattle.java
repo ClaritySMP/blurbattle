@@ -549,6 +549,8 @@ public final class Blurbattle extends JavaPlugin implements Listener {
                     // If you want to cancel the battle request as well:
                     battleRequests.remove(clickedPlayer.getUniqueId());
                     battleRequests.remove(otherPlayerId);
+                    battleplayers.remove(clickedPlayer.getUniqueId());
+                    battleplayers.remove(otherPlayer.getUniqueId());
                 }
             }
         }
