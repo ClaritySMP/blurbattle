@@ -1,4 +1,4 @@
-<p align="center">
+<p 1align="center">
 <img src="images/blurbattle.png" alt="Blurbattle logo">
 </p>
 

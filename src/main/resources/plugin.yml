@@ -1,5 +1,5 @@
 name: Blurbattle
-version: 1.0.0
+version: 1.0.1
 main: org.neo.blurbattle.Blurbattle
 api-version: 1.13
 depend: ['Multiverse-Core']
@@ -10,3 +10,7 @@ commands:
     aliases: [ pvp ]
     permission: blurbattle.battle.command
     permission-message: you don't have permission to pvp, if you think this is an issue, contact the server admin
+permissions:
+  blurbattle.battle.command:
+    description: Allows usage of the /blurbattle command
+    default: true
