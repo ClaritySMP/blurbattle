@@ -31,24 +31,23 @@ public class pvpmap {
     public void startBattle(Player player, UUID opponentUUID) {
         Player opponent = Bukkit.getPlayer(opponentUUID);
 
-
         if (opponent != null && opponent.isOnline()) {
 
             World world = worldManager.getMVWorld(worldName).getCBWorld();
-
-
 
             // Define player locations within the "blurbattle" world
             double player1X = Blurbattle.getInstance().getConfig().getDouble("player1-spawn-coords.x");
             double player1Y = Blurbattle.getInstance().getConfig().getDouble("player1-spawn-coords.y");
             double player1Z = Blurbattle.getInstance().getConfig().getDouble("player1-spawn-coords.z");
+            float player1Yaw = (float) Blurbattle.getInstance().getConfig().getDouble("player1-spawn-coords.yaw");
 
             double player2X = Blurbattle.getInstance().getConfig().getDouble("player2-spawn-coords.x");
             double player2Y = Blurbattle.getInstance().getConfig().getDouble("player2-spawn-coords.y");
             double player2Z = Blurbattle.getInstance().getConfig().getDouble("player2-spawn-coords.z");
+            float player2Yaw = (float) Blurbattle.getInstance().getConfig().getDouble("player2-spawn-coords.yaw");
 
-            Location playerLocation = new Location(world, player1X, player1Y, player1Z);
-            Location opponentLocation = new Location(world, player2X, player2Y, player2Z);
+            Location playerLocation = new Location(world, player1X, player1Y, player1Z, player1Yaw, 0);
+            Location opponentLocation = new Location(world, player2X, player2Y, player2Z, player2Yaw, 0);
 
             // Teleport players directly using the Multiverse-Core API
             player.teleport(playerLocation);
@@ -98,19 +97,18 @@ public class pvpmap {
         }
     }
 
-
     public void handleLoss(Player player, Player opponent, UUID opponentId) {
 
         World world = worldManager.getMVWorld(mainworldName).getCBWorld();
         Location opponentStoredLocation = Blurbattle.getInstance().opoglocation.getOrDefault(opponentId, null);
 
-
         // Define player locations within the "blurbattle" world
         Location opponentLocation = new Location(world, opponentStoredLocation.getX(), opponentStoredLocation.getY(), opponentStoredLocation.getZ(), opponentStoredLocation.getYaw(), opponentStoredLocation.getPitch());
 
-        // Teleport players directly using the Multiverse-Core API
+        // Teleport the winner back to original location
         opponent.teleport(opponentLocation);
 
+        // Restore winner's original health and hunger
         if (Blurbattle.getInstance().originalHealth.containsKey(opponent.getUniqueId()) && Blurbattle.getInstance().originalHunger.containsKey(opponent.getUniqueId())) {
             opponent.setHealth(Blurbattle.getInstance().originalHealth.get(opponentId));
             opponent.setFoodLevel(Blurbattle.getInstance().originalHunger.get(opponentId));
@@ -121,12 +119,10 @@ public class pvpmap {
         player.sendMessage(ChatColor.RED + "You have lost the battle.");
 
         // Give the winner the betted items
-        // (This part needs further implementation based on how you store betted items)
-        // ... (logic to transfer items from both players' betting inventories to the winner) ...
         List<ItemStack> playerItems = Blurbattle.getInstance().playerBets.get(player);
         List<ItemStack> opponentItems = Blurbattle.getInstance().playerBets.get(opponent);
 
-        // Check if player betted items exist, if so, give them to the opponent
+        // Check if player betted items exist, if so, give them to the opponent (winner)
         if (playerItems != null) {
             for (ItemStack item : playerItems) {
                 opponent.getInventory().addItem(item);
@@ -135,7 +131,7 @@ public class pvpmap {
             Blurbattle.getInstance().removeItemByName(opponent, ChatColor.RED + "Cancel Bet");
         }
 
-        // Check if opponent betted items exist, if so, give them to the player
+        // Check if opponent betted items exist, if so, give them to the opponent (winner)
         if (opponentItems != null) {
             for (ItemStack item : opponentItems) {
                 opponent.getInventory().addItem(item);
@@ -143,6 +139,9 @@ public class pvpmap {
             Blurbattle.getInstance().removeItemByName(opponent, ChatColor.GREEN + "Start Battle");
             Blurbattle.getInstance().removeItemByName(opponent, ChatColor.RED + "Cancel Bet");
         }
+
+        // Note: The losing player's inventory is already restored in the onPlayerDeath event handler
+        // so we don't need to restore it again here. The stored data has already been cleared there.
 
         // Clear related data
         Blurbattle.getInstance().battleRequests.remove(player.getUniqueId());
@@ -155,9 +154,11 @@ public class pvpmap {
         Blurbattle.getInstance().originalHunger.remove(opponentId);
         Blurbattle.getInstance().bettingInventories.remove(player.getUniqueId());
         Blurbattle.getInstance().bettingInventories.remove(opponentId);
-        // Blurbattle.getInstance().battleplayers.remove(player.getUniqueId());
-        // Blurbattle.getInstance().battleplayers.remove(opponentId);
-        // not yet
+
+        // Clear bet data
+        Blurbattle.getInstance().playerBets.remove(player);
+        Blurbattle.getInstance().playerBets.remove(opponent);
+
         Bukkit.getScheduler().runTaskLater(Blurbattle.getInstance(), () -> {
             try {
                 resetArenaWorld(player, opponent);
@@ -168,7 +169,6 @@ public class pvpmap {
         }, 20L); // 20 ticks = 1 second
 
     }
-
     public void resetArenaWorld(Player player, Player opponent) {
         try {
             // Unload the world first to avoid issues while copying

@@ -32,7 +32,10 @@ public final class Blurbattle extends JavaPlugin implements Listener {
     public final HashMap<UUID, Boolean> readyPlayers = new HashMap<>();
     public final HashMap<UUID, UUID> battleplayers = new HashMap<>();
     public final HashMap<Player, List<ItemStack>> playerBets = new HashMap<>();
-    private Map<UUID, List<ItemStack>> playerInventories = new HashMap<>();
+    public Map<UUID, List<ItemStack>> playerInventories = new HashMap<>();
+    public Map<UUID, ItemStack[]> playerArmor = new HashMap<>();
+    public Map<UUID, ItemStack> playerOffhand = new HashMap<>();
+    public Map<UUID, Integer> playerExp = new HashMap<>();
     private boolean isBattleReady = false;
     public boolean isReopeningInventory = false;
     private static Blurbattle instance;
@@ -310,40 +313,106 @@ public final class Blurbattle extends JavaPlugin implements Listener {
         UUID playerId = player.getUniqueId();
         List<ItemStack> inventoryItems = new ArrayList<>();
 
-        // Iterate through the player's inventory
-        for (ItemStack itemStack : player.getInventory().getContents()) {
+        // Save ONLY the main inventory (slots 0-35), NOT armor slots
+        ItemStack[] contents = player.getInventory().getContents();
+        for (int i = 0; i < 36; i++) { // Only first 36 slots (main inventory + hotbar)
+            ItemStack itemStack = contents[i];
             if (itemStack != null && itemStack.getType() != Material.AIR) {
-                // Clone the item to prevent modification of the original stack later
-                ItemStack clonedItem = itemStack.clone();
-                inventoryItems.add(clonedItem);
+                inventoryItems.add(itemStack.clone());
             }
         }
 
-        // Store the list of items in the map
-        playerInventories.put(playerId, inventoryItems);
-        player.sendMessage(ChatColor.GREEN + "Your inventory has been stored.");
-    }
+        // Save armor contents separately
+        ItemStack[] armorContents = player.getInventory().getArmorContents();
+        ItemStack[] clonedArmorContents = new ItemStack[armorContents.length];
+        for (int i = 0; i < armorContents.length; i++) {
+            if (armorContents[i] != null) {
+                clonedArmorContents[i] = armorContents[i].clone();
+            } else {
+                clonedArmorContents[i] = null;
+            }
+        }
 
-    // Method to retrieve and restore a player's inventory
+        // Save offhand item
+        ItemStack offhandItem = player.getInventory().getItemInOffHand();
+        ItemStack clonedOffhandItem = (offhandItem != null && offhandItem.getType() != Material.AIR) ?
+                offhandItem.clone() : null;
+
+        // Save experience
+        int totalExp = player.getTotalExperience();
+
+        // Store all the data
+        playerInventories.put(playerId, inventoryItems);
+        playerArmor.put(playerId, clonedArmorContents);
+        playerOffhand.put(playerId, clonedOffhandItem);
+        playerExp.put(playerId, totalExp);
+
+        player.sendMessage(ChatColor.GREEN + "Your inventory, armor, offhand, and experience have been stored.");
+    }
+    // Method to retrieve and restore a player's inventory, armor, offhand, and experience
     public void restorePlayerInventory(Player player) {
         UUID playerId = player.getUniqueId();
 
-        // Check if the player's inventory is stored
-        if (playerInventories.containsKey(playerId)) {
-            List<ItemStack> storedItems = playerInventories.get(playerId);
+        // Check if the player's data is stored
+        boolean hasInventory = playerInventories.containsKey(playerId);
+        boolean hasArmor = playerArmor.containsKey(playerId);
+        boolean hasOffhand = playerOffhand.containsKey(playerId);
+        boolean hasExp = playerExp.containsKey(playerId);
 
-            // Clear current inventory before restoring the stored items
-            player.getInventory().clear();
+        if (hasInventory || hasArmor || hasOffhand || hasExp) {
+            // Restore main inventory
+            if (hasInventory) {
+                List<ItemStack> storedItems = playerInventories.get(playerId);
 
-            // Add the stored items back to the player's inventory
-            for (ItemStack itemStack : storedItems) {
-                player.getInventory().addItem(itemStack);
+                // Clear current inventory before restoring the stored items
+                player.getInventory().clear();
+
+                // Add the stored items back to the player's inventory
+                for (ItemStack itemStack : storedItems) {
+                    player.getInventory().addItem(itemStack);
+                }
             }
 
-            player.sendMessage(ChatColor.GREEN + "Your inventory has been restored.");
+            // Restore armor
+            if (hasArmor) {
+                ItemStack[] storedArmor = playerArmor.get(playerId);
+                player.getInventory().setArmorContents(storedArmor);
+            }
+
+            // Restore offhand
+            if (hasOffhand) {
+                ItemStack storedOffhand = playerOffhand.get(playerId);
+                if (storedOffhand != null) {
+                    player.getInventory().setItemInOffHand(storedOffhand);
+                } else {
+                    player.getInventory().setItemInOffHand(new ItemStack(Material.AIR));
+                }
+            }
+
+            // Restore experience - FIXED VERSION
+            if (hasExp) {
+                int storedExp = playerExp.get(playerId);
+                // First reset to 0
+                player.setLevel(0);
+                player.setExp(0);
+                // Then give back the total experience
+                player.giveExp(storedExp);
+            }
+
+            player.sendMessage(ChatColor.GREEN + "Your inventory, armor, offhand, and experience have been restored.");
+
+            // Clean up stored data to prevent memory leaks
+            clearStoredPlayerData(playerId);
         } else {
-            player.sendMessage(ChatColor.RED + "No stored inventory found.");
+            player.sendMessage(ChatColor.RED + "No stored data found.");
         }
+    }
+    // Method to clear stored player data
+    public void clearStoredPlayerData(UUID playerId) {
+        playerInventories.remove(playerId);
+        playerArmor.remove(playerId);
+        playerOffhand.remove(playerId);
+        playerExp.remove(playerId);
     }
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
@@ -438,6 +507,8 @@ public final class Blurbattle extends JavaPlugin implements Listener {
             player.spigot().respawn(); // Force the player to respawn
             player.teleport(respawnLocation); // Teleport to the desired location
             restorePlayerInventory(player);
+            // Clear stored data to prevent memory leaks
+            clearStoredPlayerData(player.getUniqueId());
             if (opponentId != null) {
 
                 Player opponent = Bukkit.getPlayer(opponentId);
@@ -657,6 +728,8 @@ public final class Blurbattle extends JavaPlugin implements Listener {
                 player.spigot().respawn(); // Force the player to respawn
                 player.teleport(respawnLocation); // Teleport to the desired location
                 restorePlayerInventory(player);
+                // Clear stored data to prevent memory leaks
+                clearStoredPlayerData(player.getUniqueId());
             });
 
             // Find the opponent
